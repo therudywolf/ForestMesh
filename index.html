@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
@@ -9,6 +9,7 @@
   <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.4/dist/protobuf.min.js"></script>
 
   <style>
+    /* ... (CSS код не изменен) ... */
     :root {
       --color-bg-primary: #0a0e1a;
       --color-bg-secondary: #131829;
@@ -614,22 +615,22 @@
 
     <div class="tabs">
       <button class="tab-button active" data-tab="connection" onclick="switchTab('connection')">🔌 Connection</button>
-      <button class="tab-button" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
-      <button class="tab-button" data-tab="lora" onclick="switchTab('lora')">📡 LoRa Config</button>
-      <button class="tab-button" data-tab="messages" onclick="switchTab('messages')">💬 Messages</button>
-      <button class="tab-button" data-tab="nodes" onclick="switchTab('nodes')">🌐 Nodes</button>
-      <button class="tab-button" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</button>
+      <button class="tab-button" data-tab="dashboard" onclick="switchTab('dashboard')" disabled>📊 Dashboard</button>
+      <button class="tab-button" data-tab="lora" onclick="switchTab('lora')" disabled>📡 LoRa Config</button>
+      <button class="tab-button" data-tab="messages" onclick="switchTab('messages')" disabled>💬 Messages</button>
+      <button class="tab-button" data-tab="nodes" onclick="switchTab('nodes')" disabled>🌐 Nodes</button>
+      <button class="tab-button" data-tab="admin" onclick="switchTab('admin')" disabled>⚙️ Admin</button>
       <button class="tab-button" data-tab="logs" onclick="switchTab('logs')">📝 Logs</button>
     </div>
 
     <div class="tab-content active" id="connection">
       <div class="help-box">
-        <h3>📖 Руководство по подключению</h3>
+        <h3>📖 Quick Start Guide</h3>
         <ol>
-          <li>Убедитесь, что нода включена и готова.</li>
-          <li>Для BLE/Serial используйте **Chrome/Edge** и **HTTPS/localhost**.</li>
-          <li>Для Serial: переключите ноду в режим **Serial/Native** (если требуется).</li>
-          <li>Для TCP: введите адрес HTTP-интерфейса (например, `192.168.42.1:80`)</li>
+          <li>Open in **Chrome/Edge** over **HTTPS/localhost** for WebBLE/WebSerial.</li>
+          <li>For Serial, ensure the device is in the **Native/Protobuf** mode.</li>
+          <li>After connecting, check the **Logs** tab for `My Node ID` data to confirm Protobuf decoding is working.
+          </li>
         </ol>
       </div>
 
@@ -644,12 +645,12 @@
         <div class="section">
           <h2 class="section-title">Bluetooth Low Energy Connection</h2>
           <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Рекомендуется для беспроводных устройств. Использует Web Bluetooth API.
+            Recommended for wireless devices.
           </p>
           <div class="button-group">
-            <button id="bleScanBtn" onclick="bleConnection.connect()">🔍 Сканировать и Подключить</button>
+            <button id="bleConnectBtn" onclick="bleConnection.connect()">🔍 Scan and Connect</button>
             <button id="bleDisconnectBtn" class="secondary" onclick="bleConnection.disconnect()"
-              disabled>Отключить</button>
+              disabled>Disconnect</button>
           </div>
           <div id="bleDeviceList" class="device-list"></div>
         </div>
@@ -659,12 +660,12 @@
         <div class="section">
           <h2 class="section-title">Serial/USB Connection</h2>
           <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Прямое USB-подключение. КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: исправлен фрейм-ридер для Protobuf.
+            Direct USB connection. **Protobuf stream decoding is now correctly implemented.**
           </p>
           <div class="button-group">
-            <button id="serialConnectBtn" onclick="serialConnection.connect()">🔌 Подключить Serial Port</button>
+            <button id="serialConnectBtn" onclick="serialConnection.connect()">🔌 Connect Serial Port</button>
             <button id="serialDisconnectBtn" class="secondary" onclick="serialConnection.disconnect()"
-              disabled>Отключить</button>
+              disabled>Disconnect</button>
           </div>
         </div>
       </div>
@@ -673,16 +674,16 @@
         <div class="section">
           <h2 class="section-title">TCP/Network Connection</h2>
           <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Подключение к HTTP-интерфейсу ноды (Wi-Fi).
+            Connect to HTTP interface (e.g., using Meshtastic Web Server).
           </p>
           <div class="form-group">
-            <label>Адрес IP и Порт (например, 192.168.42.1:80)</label>
-            <input type="text" id="tcpAddress" placeholder="192.168.1.100:80" value="192.168.42.1:80">
+            <label>Address IP and Port (e.g., 192.168.42.1:80)</label>
+            <input type="text" id="tcpAddress" placeholder="192.168.42.1:80" value="192.168.42.1:80">
           </div>
           <div class="button-group">
-            <button id="tcpConnectBtn" onclick="tcpConnection.connect()">🌐 Подключить TCP</button>
+            <button id="tcpConnectBtn" onclick="tcpConnection.connect()">🌐 Connect TCP</button>
             <button id="tcpDisconnectBtn" class="secondary" onclick="tcpConnection.disconnect()"
-              disabled>Отключить</button>
+              disabled>Disconnect</button>
           </div>
         </div>
       </div>
@@ -767,8 +768,8 @@
           </select>
         </div>
         <div class="button-group">
-          <button id="applyLoraBtn">✅ Применить Конфигурацию</button>
-          <button class="secondary" id="revertLoraBtn">↶ Отменить Изменения</button>
+          <button id="applyLoraBtn">✅ Apply Configuration</button>
+          <button class="secondary" id="revertLoraBtn">↶ Revert Changes</button>
         </div>
       </div>
     </div>
@@ -779,22 +780,22 @@
         <div class="form-group">
           <label>Recipient</label>
           <select id="messageRecipient">
-            <option value="broadcast">📢 Широковещание (Все узлы)</option>
+            <option value="broadcast">📢 Broadcast (All Nodes)</option>
           </select>
         </div>
         <div class="form-group">
           <label>Message</label>
-          <textarea id="messageText" rows="3" placeholder="Введите сообщение здесь..."></textarea>
+          <textarea id="messageText" rows="3" placeholder="Type your message here..."></textarea>
         </div>
         <div class="button-group">
-          <button id="sendMessageBtn" onclick="sendMessageHandler()">📤 Отправить Сообщение</button>
-          <button class="secondary" id="clearMessagesBtn">🗑️ Очистить Историю</button>
+          <button id="sendMessageBtn">📤 Send Message</button>
+          <button class="secondary" id="clearMessagesBtn">🗑️ Clear History</button>
         </div>
       </div>
       <div class="section">
         <h2 class="section-title">Message History</h2>
         <div class="message-list" id="messageList">
-          <p style="color: var(--color-text-secondary); text-align: center;">Нет сообщений</p>
+          <p style="color: var(--color-text-secondary); text-align: center;">No messages yet</p>
         </div>
       </div>
     </div>
@@ -816,7 +817,7 @@
             </thead>
             <tbody id="nodeTableBody">
               <tr>
-                <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">Узлы пока не обнаружены
+                <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">No nodes discovered yet
                 </td>
               </tr>
             </tbody>
@@ -837,15 +838,15 @@
           <input type="text" id="deviceShortName" placeholder="MESH" maxlength="4">
         </div>
         <div class="button-group">
-          <button id="updateDeviceNameBtn">💾 Обновить Имя Устройства</button>
+          <button id="updateDeviceNameBtn">💾 Update Device Name</button>
         </div>
       </div>
       <div class="section">
         <h2 class="section-title">Device Actions</h2>
         <div class="button-group">
-          <button class="secondary" id="rebootDeviceBtn">🔄 Перезагрузить Устройство</button>
-          <button class="secondary" id="exportConfigBtn">📥 Экспорт Конфигурации</button>
-          <button class="danger" id="factoryResetBtn">⚠️ Сброс до заводских настроек</button>
+          <button class="secondary" id="rebootDeviceBtn">🔄 Reboot Device</button>
+          <button class="secondary" id="exportConfigBtn">📥 Export Configuration</button>
+          <button class="danger" id="factoryResetBtn">⚠️ Factory Reset</button>
         </div>
       </div>
     </div>
@@ -854,10 +855,10 @@
       <div class="section">
         <h2 class="section-title">System Logs</h2>
         <div class="button-group" style="margin-bottom: 15px;">
-          <button class="secondary" id="clearLogsBtn" onclick="logger.clear()">🗑️ Очистить Логи</button>
-          <button class="secondary" id="exportLogsBtn">📥 Экспорт Логов</button>
+          <button class="secondary" id="clearLogsBtn" onclick="logger.clear()">🗑️ Clear Logs</button>
+          <button class="secondary" id="exportLogsBtn">📥 Export Logs</button>
           <select id="logLevelFilter" style="width: auto;">
-            <option value="ALL">Все Уровни</option>
+            <option value="ALL">All Levels</option>
             <option value="DEBUG">DEBUG</option>
             <option value="INFO">INFO</option>
             <option value="WARN">WARN</option>
