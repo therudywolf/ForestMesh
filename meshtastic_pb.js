@@ -1,12 +1,13 @@
 /*
- * Этот файл является минимальной заглушкой, содержащей только базовые
- * определения Meshtastic Protobuf, необходимые для устранения ошибки инициализации
+ * meshtastic_pb.js
+ *
+ * Минимальная рабочая заглушка, содержащая необходимые
+ * определения Meshtastic Protobuf для устранения ошибки инициализации
  * и базовой работы ToRadio/FromRadio.
- * Он должен быть загружен ПОСЛЕ protobuf.min.js.
+ * ДОЛЖНА БЫТЬ ЗАГРУЖЕНА ПОСЛЕ protobuf.min.js.
  */
 (function(global) {
-    // Убедимся, что корневой объект Protobuf существует
-    if (!global.protobuf) {
+    if (typeof protobuf === 'undefined') {
         console.error("Protobuf library not loaded. Ensure protobuf.min.js is included before this file.");
         return;
     }
@@ -36,7 +37,7 @@
         valuesById[11] = values["T_LORA_V1"] = "T_LORA_V1";
         valuesById[12] = values["T_LORA_V2"] = "T_LORA_V2";
         valuesById[13] = values["T_LORA_V21"] = "T_LORA_V21";
-        valuesById[14] = values["HELTEC_V4"] = "HELTEC_V4"; // Добавлен Heltec V4
+        valuesById[14] = values["HELTEC_V4"] = "HELTEC_V4"; // Heltec V4
         valuesById[15] = values["TBEAM_S3_CORE"] = "TBEAM_S3_CORE"; 
         return values;
     })();
@@ -51,7 +52,6 @@
             valuesById[2] = values["EU"] = "EU";
             valuesById[3] = values["JP"] = "JP";
             valuesById[9] = values["RU"] = "RU"; // Включен RU
-            // Опущены остальные регионы для краткости
             return values;
         })();
         return Config;
@@ -100,5 +100,53 @@
 
         return ToRadio;
     })();
+    
+    // NodeInfo (для myNode)
+    meshtasticRoot.NodeInfo = (function() {
+        var NodeInfo = function NodeInfo(properties) { };
+        NodeInfo.prototype.id = 0;
+        NodeInfo.prototype.user = null;
+        return NodeInfo;
+    })();
+    
+    // User (для NodeInfo)
+    meshtasticRoot.User = (function() {
+        var User = function User(properties) { };
+        User.prototype.longName = '';
+        return User;
+    })();
+    
+    // DeviceMetrics (для deviceMetrics)
+    meshtasticRoot.DeviceMetrics = (function() {
+        var DeviceMetrics = function DeviceMetrics(properties) { };
+        DeviceMetrics.prototype.batteryLevel = 0;
+        return DeviceMetrics;
+    })();
+
+    // DeviceMetadata (для deviceMetadata)
+    meshtasticRoot.DeviceMetadata = (function() {
+        var DeviceMetadata = function DeviceMetadata(properties) { };
+        DeviceMetadata.prototype.firmwareVersion = '';
+        DeviceMetadata.prototype.hwModel = 0; // Использует HardwareModel enum
+        DeviceMetadata.prototype.region = 0;   // Использует Config.RegionCode enum
+        return DeviceMetadata;
+    })();
+    
+    // Data (для packet.decoded)
+    meshtasticRoot.Data = (function() {
+        var Data = function Data(properties) { };
+        Data.prototype.portnum = 0;
+        Data.prototype.payload = new Uint8Array(0);
+        return Data;
+    })();
+    
+    // MeshPacket (для packet)
+    meshtasticRoot.MeshPacket = (function() {
+        var MeshPacket = function MeshPacket(properties) { };
+        MeshPacket.prototype.decoded = null;
+        MeshPacket.prototype.to = 0;
+        return MeshPacket;
+    })();
+
 
 })(this);
