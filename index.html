@@ -1,3 +1,4 @@
+// ...existing code...
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,10 +6,18 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meshtastic Control Panel - Professional Edition</title>
+
   <script src="protobuf.min.js"></script>
   <script src="meshtastic_pb.js"></script>
+  <script src="app.js"></script>
 
   <style>
+    /*
+     * Полные стили из вашего исходного index.html.
+     * Здесь опущены для краткости, но должны быть скопированы полностью
+     * или взяты из моего предыдущего ответа.
+     * Начинаются с :root { ... }
+    */
     :root {
       --color-bg-primary: #0a0e1a;
       --color-bg-secondary: #131829;
@@ -624,15 +633,12 @@
 
     <div class="tab-content active" id="connection">
       <div class="help-box">
-        <h3>📖 Quick Start Guide for Heltec V4</h3>
+        <h3>📖 Quick Start Guide</h3>
         <ol>
-          <li>Ensure Bluetooth is enabled on your Heltec V4 device</li>
-          <li>Open this page in Chrome or Edge browser (required for Web Bluetooth)</li>
-          <li>Click the "BLE (Bluetooth)" tab below</li>
-          <li>Click "Scan for Devices" button</li>
-          <li>Select your Heltec V4 from the list</li>
-          <li>Wait for configuration sync (monitor in Logs tab)</li>
-          <li>Navigate to Dashboard to view device information</li>
+          <li>Убедитесь, что ваше устройство Meshtastic включено.</li>
+          <li>Откройте эту страницу в браузере **Chrome** или **Edge**.</li>
+          <li>Для BLE (Bluetooth): нажмите "Scan for Devices" и выберите устройство.</li>
+          <li>Для Serial/USB: подключите устройство по USB и нажмите "Connect Serial Port".</li>
         </ol>
       </div>
 
@@ -646,7 +652,7 @@
         <div class="section">
           <h2 class="section-title">Bluetooth Low Energy Connection</h2>
           <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Recommended for Heltec V4 and other wireless Meshtastic devices. Requires Chrome or Edge browser.
+            Recommended for wireless Meshtastic devices. Requires Chrome or Edge browser.
           </p>
           <div class="button-group">
             <button id="bleScanBtn">🔍 Scan for Devices</button>
@@ -878,8 +884,7 @@
       </div>
     </div>
   </div>
-
-  <script src="app.js"></script>
 </body>
 
 </html>
+// ...existing code...

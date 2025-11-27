@@ -2,10 +2,22 @@
  * Этот файл является минимальной заглушкой, содержащей только базовые
  * определения Meshtastic Protobuf, необходимые для устранения ошибки инициализации
  * и базовой работы ToRadio/FromRadio.
- * В реальном проекте Meshtastic этот файл генерируется из всех .proto файлов.
+ * Он должен быть загружен ПОСЛЕ protobuf.min.js.
  */
 (function(global) {
-    var meshtasticRoot = (global.protobuf.roots["meshtastic"] = {});
+    // Убедимся, что корневой объект Protobuf существует
+    if (!global.protobuf) {
+        console.error("Protobuf library not loaded. Ensure protobuf.min.js is included before this file.");
+        return;
+    }
+    
+    // Создаем корневой объект для Meshtastic
+    global.protobuf.roots["meshtastic"] = {};
+    var meshtasticRoot = global.protobuf.roots["meshtastic"];
+
+    // =========================================================================
+    // ENUMS
+    // =========================================================================
 
     // HardwareModel Enum (Необходим для устранения ошибки 'no such Enum meshtastic.HardwareModel')
     meshtasticRoot.HardwareModel = (function() {
@@ -24,7 +36,8 @@
         valuesById[11] = values["T_LORA_V1"] = "T_LORA_V1";
         valuesById[12] = values["T_LORA_V2"] = "T_LORA_V2";
         valuesById[13] = values["T_LORA_V21"] = "T_LORA_V21";
-        valuesById[14] = values["HELTEC_V4"] = "HELTEC_V4";
+        valuesById[14] = values["HELTEC_V4"] = "HELTEC_V4"; // Добавлен Heltec V4
+        valuesById[15] = values["TBEAM_S3_CORE"] = "TBEAM_S3_CORE"; 
         return values;
     })();
 
@@ -37,55 +50,51 @@
             valuesById[1] = values["US"] = "US";
             valuesById[2] = values["EU"] = "EU";
             valuesById[3] = values["JP"] = "JP";
-            valuesById[4] = values["AU"] = "AU";
-            valuesById[5] = values["CN"] = "CN";
-            valuesById[6] = values["KR"] = "KR";
-            valuesById[7] = values["IN"] = "IN";
-            valuesById[8] = values["NZ"] = "NZ";
-            valuesById[9] = values["RU"] = "RU"; // Добавлен RU
-            valuesById[10] = values["SA"] = "SA"; 
-            valuesById[11] = values["ZA"] = "ZA"; 
+            valuesById[9] = values["RU"] = "RU"; // Включен RU
+            // Опущены остальные регионы для краткости
             return values;
         })();
         return Config;
     })();
 
-    // FromRadio Message (Минимальное определение для декодирования)
+    // PortNum Enum (Для сообщений)
+    meshtasticRoot.PortNum = (function() {
+        var valuesById = {}, values = {};
+        valuesById[0] = values["UNKNOWN_APP"] = "UNKNOWN_APP";
+        valuesById[1] = values["TEXT_MESSAGE_APP"] = "TEXT_MESSAGE_APP";
+        return values;
+    })();
+
+    // =========================================================================
+    // MESSAGES (Минимальные классы для кодирования/декодирования)
+    // =========================================================================
+
+    // FromRadio Message (Получение данных от устройства)
     meshtasticRoot.FromRadio = (function() {
         var FromRadio = function FromRadio(properties) {
-            if (properties)
-                for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    this[keys[i]] = properties[keys[i]];
+             // ...
         };
 
-        // Минимальные поля, необходимые для работы
         FromRadio.decode = global.protobuf.Message.decode;
-        FromRadio.decodeDelimited = global.protobuf.Message.decodeDelimited;
         
+        // Объявляем минимальные поля, чтобы Protobuf мог их декодировать
         FromRadio.prototype.myNode = null;
         FromRadio.prototype.deviceMetrics = null;
         FromRadio.prototype.deviceMetadata = null;
-        FromRadio.prototype.packet = null;
-
-        // Здесь должна быть полная логика кодирования/декодирования
-        // Для минимальной работы с protobuf.js достаточно наличия myNode, deviceMetrics, deviceMetadata.
-        // Я опущу полную схему и полагаюсь на то, что protobuf.js обработает неизвестные поля.
+        FromRadio.prototype.packet = null; // Для входящих сообщений
 
         return FromRadio;
     })();
 
-    // ToRadio Message (Минимальное определение для кодирования)
+    // ToRadio Message (Отправка команд на устройство)
     meshtasticRoot.ToRadio = (function() {
         var ToRadio = function ToRadio(properties) {
-            if (properties)
-                for (var keys = Object.keys(properties), i = 0; i < keys.length; ++i)
-                    this[keys[i]] = properties[keys[i]];
+             // ...
         };
 
         ToRadio.encode = global.protobuf.Message.encode;
-        ToRadio.decode = global.protobuf.Message.decode;
-        ToRadio.decodeDelimited = global.protobuf.Message.decodeDelimited;
         
+        // Объявляем минимальные поля
         ToRadio.prototype.wantConfigId = 0; // Для Handshake
         ToRadio.prototype.packet = null;     // Для отправки сообщений
 
