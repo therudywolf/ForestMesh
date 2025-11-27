@@ -4,918 +4,655 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meshtastic Control Panel - Rudy Edition</title>
+  <title>Meshtastic Commander - Rudy Edition</title>
+  <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.4/dist/protobuf.min.js"></script>
   <style>
     :root {
-      --bg-primary: #0f172a;
-      --bg-secondary: #1e293b;
-      --bg-tertiary: #334155;
+      --bg-dark: #0f172a;
+      --bg-panel: #1e293b;
       --accent: #38bdf8;
-      --accent-hover: #0ea5e9;
-      --success: #22c55e;
-      --warning: #eab308;
-      --error: #ef4444;
-      --text-main: #f1f5f9;
-      --text-muted: #94a3b8;
-      --border: #475569;
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+      --text-main: #f8fafc;
+      --text-dim: #94a3b8;
+      --border: #334155;
+      --msg-in: #334155;
+      --msg-out: #0ea5e9;
     }
 
     body {
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg-primary);
+      background-color: var(--bg-dark);
       color: var(--text-main);
-      height: 100vh;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
       display: flex;
       flex-direction: column;
+      height: 100vh;
       overflow: hidden;
     }
 
-    /* Layout */
-    .app-header {
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
+    /* HEADER */
+    header {
+      background: var(--bg-panel);
       padding: 15px 20px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-shrink: 0;
     }
 
-    .header-title {
-      font-size: 1.25rem;
-      font-weight: 700;
+    .brand {
+      font-weight: bold;
+      font-size: 1.2rem;
       color: var(--accent);
-      display: flex;
-      align-items: center;
-      gap: 10px;
     }
 
-    .main-layout {
+    .status {
+      font-size: 0.9rem;
+      padding: 5px 10px;
+      border-radius: 12px;
+      background: #333;
+    }
+
+    .status.connected {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+
+    /* LAYOUT */
+    .main-container {
       display: flex;
       flex: 1;
       overflow: hidden;
     }
 
-    /* Sidebar Navigation */
+    /* SIDEBAR */
     .sidebar {
-      width: 250px;
-      background: var(--bg-secondary);
+      width: 220px;
+      background: var(--bg-panel);
       border-right: 1px solid var(--border);
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      padding: 10px;
+      gap: 5px;
     }
 
     .nav-btn {
-      text-align: left;
       background: transparent;
       border: none;
-      color: var(--text-muted);
-      padding: 12px 15px;
-      border-radius: 8px;
+      color: var(--text-dim);
+      padding: 12px;
+      text-align: left;
       cursor: pointer;
-      font-size: 0.95rem;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 5px;
+      border-radius: 6px;
+      transition: 0.2s;
     }
 
     .nav-btn:hover {
-      background: var(--bg-tertiary);
+      background: rgba(255, 255, 255, 0.05);
       color: var(--text-main);
     }
 
     .nav-btn.active {
       background: rgba(56, 189, 248, 0.15);
       color: var(--accent);
-      font-weight: 600;
+      font-weight: bold;
     }
 
-    /* Content Area */
-    .content-area {
+    /* CONTENT */
+    .content {
       flex: 1;
-      overflow-y: auto;
-      padding: 20px;
       position: relative;
+      background: var(--bg-dark);
     }
 
-    .view-section {
+    .view {
       display: none;
-      max-width: 1000px;
-      margin: 0 auto;
-      animation: fadeIn 0.3s;
+      height: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
     }
 
-    .view-section.active {
+    .view.active {
       display: block;
     }
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(5px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Components */
-    .card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    .card h2 {
-      margin-bottom: 15px;
-      font-size: 1.1rem;
-      color: var(--accent);
-    }
-
-    .status-badge {
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .status-badge.disconnected {
-      background: rgba(239, 68, 68, 0.2);
-      color: var(--error);
-    }
-
-    .status-badge.connected {
-      background: rgba(34, 197, 94, 0.2);
-      color: var(--success);
-    }
-
-    .status-indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 8px currentColor;
-    }
-
-    /* Forms */
-    input,
-    select,
-    textarea {
-      width: 100%;
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      padding: 10px;
-      border-radius: 6px;
-      margin-bottom: 10px;
-      font-family: inherit;
-    }
-
-    input:focus,
-    textarea:focus {
-      outline: 2px solid var(--accent);
-      border-color: transparent;
-    }
-
-    button {
-      padding: 10px 20px;
-      border-radius: 6px;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #000;
-    }
-
-    .btn-secondary {
-      background: var(--bg-tertiary);
-      color: var(--text-main);
-      border: 1px solid var(--border);
-    }
-
-    .btn-danger {
-      background: var(--error);
-      color: white;
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
-    }
-
-    /* Chat Specific Interface */
-    .chat-container {
+    /* CHAT STYLES */
+    .chat-layout {
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 140px);
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
+      height: 100%;
     }
 
-    .chat-messages {
+    .chat-history {
       flex: 1;
-      padding: 20px;
       overflow-y: auto;
+      padding-right: 10px;
       display: flex;
       flex-direction: column;
-      gap: 15px;
+      gap: 12px;
     }
 
-    .message-bubble {
-      max-width: 70%;
-      padding: 10px 15px;
+    .msg-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 80%;
+    }
+
+    .msg-row.incoming {
+      align-self: flex-start;
+    }
+
+    .msg-row.outgoing {
+      align-self: flex-end;
+    }
+
+    .msg-bubble {
+      padding: 10px 14px;
       border-radius: 12px;
       position: relative;
       word-wrap: break-word;
-      animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    @keyframes popIn {
-      from {
-        transform: scale(0.9);
-        opacity: 0;
-      }
-
-      to {
-        transform: scale(1);
-        opacity: 1;
-      }
-    }
-
-    .message-bubble.incoming {
-      align-self: flex-start;
-      background: var(--bg-tertiary);
+    .msg-row.incoming .msg-bubble {
+      background: var(--msg-in);
       border-bottom-left-radius: 2px;
     }
 
-    .message-bubble.outgoing {
-      align-self: flex-end;
-      background: var(--accent);
-      color: #0f172a;
+    .msg-row.outgoing .msg-bubble {
+      background: var(--msg-out);
+      color: #fff;
       border-bottom-right-radius: 2px;
     }
 
     .msg-meta {
       font-size: 0.75rem;
       margin-bottom: 4px;
-      opacity: 0.8;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
+      color: var(--text-dim);
     }
 
     .msg-time {
       font-size: 0.7rem;
-      opacity: 0.6;
-      margin-top: 5px;
+      opacity: 0.7;
       text-align: right;
+      margin-top: 4px;
     }
 
-    .chat-input-area {
-      padding: 15px;
-      background: var(--bg-tertiary);
-      border-top: 1px solid var(--border);
+    .chat-input-box {
+      margin-top: 15px;
       display: flex;
       gap: 10px;
+      padding-top: 15px;
+      border-top: 1px solid var(--border);
     }
 
-    /* Logs */
-    .log-terminal {
-      background: #000;
-      color: #0f0;
-      font-family: 'Consolas', 'Courier New', monospace;
-      padding: 15px;
-      border-radius: 8px;
-      height: 400px;
-      overflow-y: auto;
-      font-size: 0.85rem;
+    input[type="text"] {
+      flex: 1;
+      background: #0f172a;
       border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 6px;
+      color: white;
     }
 
-    .log-line {
-      margin-bottom: 4px;
-      border-bottom: 1px solid #111;
-      padding-bottom: 2px;
-    }
-
-    .log-time {
-      color: #666;
-      margin-right: 10px;
-    }
-
-    .log-DEBUG {
-      color: #888;
-    }
-
-    .log-INFO {
-      color: #38bdf8;
-    }
-
-    .log-WARN {
-      color: #fbbf24;
-    }
-
-    .log-ERROR {
-      color: #ef4444;
-    }
-
-    /* Node Table */
-    .node-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 15px;
-    }
-
-    .node-card {
-      background: var(--bg-tertiary);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 15px;
-    }
-
-    .node-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 10px;
+    button.send-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      padding: 0 20px;
+      cursor: pointer;
       font-weight: bold;
+    }
+
+    /* COMMON UI */
+    .card {
+      background: var(--bg-panel);
+      padding: 20px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-top: 0;
       color: var(--accent);
     }
 
-    .node-stat {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.9rem;
-      margin-bottom: 5px;
-      color: var(--text-muted);
-    }
-
-    .node-val {
+    button.btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: var(--bg-dark);
       color: var(--text-main);
+      border: 1px solid var(--border);
+      transition: 0.2s;
     }
 
-    /* Toast */
-    .toast-container {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+    button.btn:hover {
+      border-color: var(--accent);
     }
 
-    .toast {
-      padding: 12px 20px;
-      background: var(--bg-secondary);
-      border-left: 4px solid var(--accent);
-      color: var(--text-main);
-      border-radius: 4px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
-      animation: slideInRight 0.3s;
-      min-width: 250px;
+    button.btn-primary {
+      background: var(--accent);
+      color: #000;
+      border: none;
     }
 
-    @keyframes slideInRight {
-      from {
-        transform: translateX(100%);
-      }
-
-      to {
-        transform: translateX(0);
-      }
+    .log-console {
+      background: #000;
+      font-family: monospace;
+      font-size: 12px;
+      color: #0f0;
+      height: 300px;
+      overflow-y: auto;
+      padding: 10px;
+      border-radius: 6px;
     }
   </style>
 </head>
 
 <body>
 
-  <input type="hidden" id="current-connection-type" value="none">
-
-  <header class="app-header">
-    <div class="header-title">
-      <span>🛰️ Meshtastic Rudy-Panel</span>
-    </div>
-    <div class="status-badge disconnected" id="globalStatus">
-      <span class="status-indicator"></span>
-      <span id="statusText">Отключено</span>
-    </div>
+  <header>
+    <div class="brand">📡 Rudy's Meshtastic Node</div>
+    <div class="status" id="connection-status">Отключено</div>
   </header>
 
-  <div class="main-layout">
+  <div class="main-container">
     <nav class="sidebar">
-      <button class="nav-btn active" onclick="router.navigate('connection')">🔌 Подключение</button>
-      <button class="nav-btn" onclick="router.navigate('chat')">💬 Чат (RU)</button>
-      <button class="nav-btn" onclick="router.navigate('nodes')">👥 Узлы</button>
-      <button class="nav-btn" onclick="router.navigate('logs')">📝 Логи</button>
+      <button class="nav-btn active" onclick="ui.show('connection')">🔌 Подключение</button>
+      <button class="nav-btn" onclick="ui.show('chat')">💬 Чат (RU)</button>
+      <button class="nav-btn" onclick="ui.show('logs')">📝 Логи</button>
     </nav>
 
-    <main class="content-area">
+    <main class="content">
 
-      <div id="view-connection" class="view-section active">
+      <div id="view-connection" class="view active">
         <div class="card">
-          <h2>Настройка соединения</h2>
-          <p style="color: var(--text-muted); margin-bottom: 15px;">Выберите способ подключения к устройству Meshtastic.
+          <h2>Управление соединением</h2>
+          <p style="color: #ccc; margin-bottom: 20px;">
+            Для работы чата необходимо подключиться к устройству по Bluetooth (Heltec V4/ESP32).
           </p>
-
-          <div class="btn-group" style="margin-bottom: 20px;">
-            <button class="btn-secondary" onclick="connManager.setMode('ble')">Bluetooth (WebBLE)</button>
-            <button class="btn-secondary" onclick="connManager.setMode('serial')">USB (Serial)</button>
-            <button class="btn-secondary" onclick="connManager.setMode('http')">Wi-Fi (HTTP)</button>
-            <button class="btn-primary" onclick="connManager.setMode('sim')">🤖 Симуляция</button>
-          </div>
-
-          <div id="conn-form-ble" style="display:none;">
-            <p>Рекомендуется для Heltec V4/ESP32. Требуется Chrome/Edge.</p>
-            <div class="btn-group">
-              <button class="btn-primary" id="btn-ble-scan">🔍 Найти устройство</button>
-              <button class="btn-danger" id="btn-ble-disconnect" disabled>Отключить</button>
-            </div>
-          </div>
-
-          <div id="conn-form-serial" style="display:none;">
-            <p>Прямое подключение через USB. Убедитесь, что драйверы установлены.</p>
-            <div class="btn-group">
-              <button class="btn-primary" id="btn-serial-connect">🔌 Подключить порт</button>
-            </div>
-          </div>
-
-          <div id="conn-form-http" style="display:none;">
-            <label>IP адрес устройства</label>
-            <input type="text" id="http-ip" placeholder="192.168.1.xxx" value="client.meshtastic.org">
-            <div class="btn-group">
-              <button class="btn-primary" id="btn-http-connect">🌐 Подключить</button>
-            </div>
-          </div>
-
-          <div id="conn-form-sim" style="display:none;">
-            <p style="color: var(--success)">Режим тестирования интерфейса. Генерирует виртуальные пакеты для проверки
-              сортировки чата.</p>
-            <button class="btn-primary" onclick="connManager.startSimulation()">🚀 Запустить симуляцию</button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-primary" id="btn-connect">🔍 Подключить BLE</button>
+            <button class="btn" id="btn-sim">🤖 Запустить Симуляцию</button>
           </div>
         </div>
 
         <div class="card">
-          <h2>Информация об устройстве</h2>
-          <div class="node-grid">
-            <div class="node-card"><span class="node-stat">Мое Имя</span><strong class="node-val"
-                id="my-name">...</strong></div>
-            <div class="node-card"><span class="node-stat">Батарея</span><strong class="node-val"
-                id="my-batt">...</strong></div>
-            <div class="node-card"><span class="node-stat">Регион</span><strong class="node-val"
-                id="my-region">...</strong></div>
-            <div class="node-card"><span class="node-stat">Пакеты в очереди</span><strong class="node-val"
-                id="queue-size">0</strong></div>
-          </div>
+          <h2>Информация об узле</h2>
+          <div id="node-info">Нет данных...</div>
         </div>
       </div>
 
-      <div id="view-chat" class="view-section">
-        <div class="chat-container">
-          <div class="chat-messages" id="chat-history">
-            <div style="text-align: center; color: var(--text-muted); margin-top: 20px;">
-              Канал #LongFast / RU<br>Ожидание сообщений...
+      <div id="view-chat" class="view">
+        <div class="chat-layout">
+          <div class="chat-history" id="chat-container">
+            <div style="text-align: center; color: var(--text-dim); margin-top: 50px;">
+              Ожидание сообщений из Mesh сети...
             </div>
           </div>
-          <div class="chat-input-area">
-            <input type="text" id="msg-input" placeholder="Напишите сообщение..."
-              onkeypress="if(event.key === 'Enter') chatEngine.send()">
-            <button class="btn-primary" onclick="chatEngine.send()">📤</button>
+          <div class="chat-input-box">
+            <input type="text" id="msg-input" placeholder="Напишите сообщение...">
+            <button class="send-btn" id="btn-send">Send</button>
           </div>
         </div>
       </div>
 
-      <div id="view-nodes" class="view-section">
-        <h2>Список узлов (Mesh)</h2>
-        <div class="node-grid" id="node-list-container">
-        </div>
-      </div>
-
-      <div id="view-logs" class="view-section">
-        <h2>Системные логи</h2>
-        <div class="log-terminal" id="log-output"></div>
-        <div class="btn-group">
-          <button class="btn-secondary" onclick="logger.clear()">Очистить</button>
-        </div>
+      <div id="view-logs" class="view">
+        <div class="log-console" id="logs"></div>
+        <button class="btn" style="margin-top: 10px;" onclick="logger.clear()">Очистить логи</button>
       </div>
 
     </main>
   </div>
 
-  <div class="toast-container" id="toast-area"></div>
-
   <script>
-    /**
-     * 🛠️ MESHTASTIC CONTROLLER - RUDY EDITION
-     * * Исправленная версия с правильными UUID и логикой обработки сообщений.
-     */
-
-    // --- КОНСТАНТЫ MESHTASTIC (Исправленные) ---
-    const UUIDS = {
-      SERVICE: '6ba1b218-102e-462f-a498-565df2d75a3d',
-      TORADIO: 'f75c76d2-129e-4dad-a1dd-7866124401e7',
-      FROMRADIO: '2c55e69e-4993-11ea-8797-2e728ce88125',
-      FROMNUM: 'ed9da18c-a800-4f66-a670-aa7547e34453'
+    // =================================================================
+    // 1. PROTOBUF ОПРЕДЕЛЕНИЕ (Вшитая схема Meshtastic)
+    // =================================================================
+    // Это JSON представление .proto файлов. Нужно для декодирования байтов.
+    const MESH_PROTO_JSON = {
+      nested: {
+        meshtastic: {
+          nested: {
+            Constants: {
+              values: {
+                DATA_PAYLOAD: 0,
+                TEXT_MESSAGE_APP: 1
+              }
+            },
+            // Обертка, которую присылает устройство по BLE
+            FromRadio: {
+              fields: {
+                num: { type: "uint32", id: 1 },
+                packet: { type: "MeshPacket", id: 2 },
+                myInfo: { type: "MyNodeInfo", id: 3 },
+                nodeInfo: { type: "NodeInfo", id: 4 }
+              }
+            },
+            // Пакет, ходящий по сети
+            MeshPacket: {
+              fields: {
+                from: { type: "uint32", id: 1 },
+                to: { type: "uint32", id: 2 },
+                channel: { type: "uint32", id: 3 },
+                decoded: { type: "Data", id: 4 }, // Устройство обычно уже декодирует AES для нас
+                id: { type: "uint32", id: 6 },
+                rxTime: { type: "fixed32", id: 7 },
+                hopLimit: { type: "uint32", id: 10 }
+              }
+            },
+            // Данные внутри пакета
+            Data: {
+              fields: {
+                portnum: { type: "int32", id: 1 }, // Тип приложения (1 = текст)
+                payload: { type: "bytes", id: 2 },
+                wantAck: { type: "bool", id: 3 }
+              }
+            },
+            NodeInfo: {
+              fields: {
+                num: { type: "uint32", id: 1 },
+                user: { type: "User", id: 2 }
+              }
+            },
+            User: {
+              fields: {
+                id: { type: "string", id: 1 },
+                longName: { type: "string", id: 2 },
+                shortName: { type: "string", id: 3 }
+              }
+            }
+          }
+        }
+      }
     };
 
-    // --- APP STATE ---
-    const app = {
-      user: {
-        name: 'RudyController',
-        id: '!12345678'
-      },
-      nodes: new Map(), // Хранилище узлов
-      isConnected: false
+    // =================================================================
+    // 2. СИСТЕМНЫЕ КОМПОНЕНТЫ
+    // =================================================================
+
+    const AppState = {
+      isConnected: false,
+      nodes: new Map(), // Кэш узлов (id -> info)
+      myId: null
     };
 
-    // --- LOGGER ---
     const logger = {
-      el: document.getElementById('log-output'),
-      log(level, msg) {
-        const time = new Date().toLocaleTimeString();
+      el: document.getElementById('logs'),
+      log(msg, type = 'INFO') {
         const line = document.createElement('div');
-        line.className = 'log-line';
-        line.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${level}">${level}</span>: ${msg}`;
+        line.style.color = type === 'ERROR' ? '#ef4444' : (type === 'RX' ? '#38bdf8' : '#0f0');
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${type}: ${msg}`;
         this.el.appendChild(line);
         this.el.scrollTop = this.el.scrollHeight;
-        console.log(`[${level}] ${msg}`);
+        console.log(`[${type}] ${msg}`);
       },
-      info(m) { this.log('INFO', m); },
-      warn(m) { this.log('WARN', m); },
-      error(m) { this.log('ERROR', m); },
-      debug(m) { this.log('DEBUG', m); },
       clear() { this.el.innerHTML = ''; }
     };
 
-    // --- TOAST NOTIFICATIONS ---
-    function showToast(msg, type = 'info') {
-      const container = document.getElementById('toast-area');
-      const el = document.createElement('div');
-      el.className = 'toast';
-      el.style.borderLeftColor = type === 'error' ? 'var(--error)' : (type === 'success' ? 'var(--success)' : 'var(--accent)');
-      el.textContent = msg;
-      container.appendChild(el);
-      setTimeout(() => el.remove(), 3000);
-    }
-
-    // --- ROUTER ---
-    const router = {
-      navigate(viewId) {
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.getElementById(`view-${viewId}`).classList.add('active');
-
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        // Простая подсветка кнопки (в реальном проекте лучше по ID)
-        event && event.target && event.target.closest('.nav-btn')?.classList.add('active');
+    const ui = {
+      show(viewId) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('view-' + viewId).classList.add('active');
+        event && event.target.classList.add('active');
+      },
+      setStatus(connected) {
+        const el = document.getElementById('connection-status');
+        if (connected) {
+          el.textContent = 'Подключено';
+          el.classList.add('connected');
+        } else {
+          el.textContent = 'Отключено';
+          el.classList.remove('connected');
+        }
       }
     };
 
-    /**
-     * 🧠 CHAT ENGINE (Сердце твоей просьбы)
-     * Отвечает за проверку очередности, дедупликацию и сортировку.
-     */
+    // =================================================================
+    // 3. CHAT ENGINE (Сортировка и отображение)
+    // =================================================================
     class ChatEngine {
       constructor() {
-        this.messages = []; // Хранилище всех сообщений
-        this.processedIds = new Set(); // Для дедупликации по ID пакета
-        this.container = document.getElementById('chat-history');
+        this.container = document.getElementById('chat-container');
+        this.messages = [];
+        this.processedIds = new Set();
       }
 
-      /**
-       * Главный метод приема сообщения
-       * @param {Object} msg - объект сообщения {id, fromId, fromName, text, timestamp}
-       */
-      incomingMessage(msg) {
-        // 1. Дедупликация (Deduplication)
-        if (this.processedIds.has(msg.id)) {
-          logger.debug(`Deduplicator: Ignored duplicate message ID ${msg.id}`);
-          return;
-        }
+      // Прием нового сообщения
+      addMessage(msg) {
+        // Дедупликация по ID пакета
+        if (this.processedIds.has(msg.id)) return;
         this.processedIds.add(msg.id);
 
-        // 2. Обогащение данными (Если знаем имя узла)
-        const node = app.nodes.get(msg.fromId);
-        if (node && node.user && node.user.longName) {
-          msg.fromName = node.user.longName;
-        }
-
-        // 3. Добавление и Сортировка (Ordering)
         this.messages.push(msg);
-        // Сортируем по времени (старые сверху, новые снизу)
-        this.messages.sort((a, b) => a.timestamp - b.timestamp);
+        // Сортировка по времени
+        this.messages.sort((a, b) => a.time - b.time);
 
-        // 4. Рендеринг (Перерисовка)
         this.render();
-
-        // Уведомление
-        if (document.getElementById('view-chat').style.display === 'none') {
-          showToast(`Сообщение от ${msg.fromName}`, 'info');
-        }
       }
 
       render() {
         this.container.innerHTML = '';
-
-        let lastDate = null;
-
         this.messages.forEach(msg => {
-          const date = new Date(msg.timestamp).toLocaleDateString();
-          // Разделитель дат
-          if (date !== lastDate) {
-            const sep = document.createElement('div');
-            sep.style.textAlign = 'center';
-            sep.style.fontSize = '0.8rem';
-            sep.style.opacity = '0.5';
-            sep.style.margin = '10px 0';
-            sep.textContent = date;
-            this.container.appendChild(sep);
-            lastDate = date;
+          const isMe = msg.from === AppState.myId || msg.from === 0; // 0 если от себя через serial иногда
+
+          const div = document.createElement('div');
+          div.className = `msg-row ${isMe ? 'outgoing' : 'incoming'}`;
+
+          // Пытаемся найти имя в базе узлов
+          let senderName = msg.fromName || `Node ${msg.from.toString(16)}`;
+          if (AppState.nodes.has(msg.from)) {
+            senderName = AppState.nodes.get(msg.from).user?.longName || senderName;
           }
 
-          const isMe = msg.fromId === app.user.id;
-          const el = document.createElement('div');
-          el.className = `message-bubble ${isMe ? 'outgoing' : 'incoming'}`;
+          const timeStr = new Date(msg.time * 1000).toLocaleTimeString();
 
-          const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-          el.innerHTML = `
-        <div class="msg-meta">
-            <span>${isMe ? 'Вы' : (msg.fromName || msg.fromId)}</span>
-        </div>
-        <div>${msg.text}</div>
-        <div class="msg-time">${timeStr}</div>
-      `;
-
-          this.container.appendChild(el);
+          div.innerHTML = `
+                <div class="msg-bubble">
+                    <div class="msg-meta">${isMe ? 'Вы' : senderName}</div>
+                    ${this.escapeHtml(msg.text)}
+                    <div class="msg-time">${timeStr}</div>
+                </div>
+            `;
+          this.container.appendChild(div);
         });
-
-        // Скролл вниз
         this.container.scrollTop = this.container.scrollHeight;
       }
 
-      send() {
-        const input = document.getElementById('msg-input');
-        const text = input.value.trim();
-        if (!text) return;
-
-        if (!app.isConnected && !connManager.isSim) {
-          showToast('Нет подключения к устройству!', 'error');
-          return;
-        }
-
-        // Формируем пакет
-        const packet = {
-          id: Math.floor(Math.random() * 1000000), // В реальности генерирует устройство
-          fromId: app.user.id,
-          fromName: app.user.name,
-          text: text,
-          timestamp: Date.now()
-        };
-
-        // Отправляем через ConnectionManager
-        connManager.sendPacket(text);
-
-        // Добавляем себе в чат (оптимистичный UI)
-        this.incomingMessage(packet);
-        input.value = '';
+      escapeHtml(text) {
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       }
     }
+    const chat = new ChatEngine();
 
-    const chatEngine = new ChatEngine();
+    // =================================================================
+    // 4. PROTOBUF LOADER & BLE HANDLER
+    // =================================================================
 
-    /**
-     * 🔌 CONNECTION MANAGER
-     * Абстрагирует BLE, Serial и HTTP
-     */
-    class ConnectionManager {
-      constructor() {
-        this.mode = 'none';
-        this.device = null;
-        this.bleServer = null;
-        this.isSim = false;
-      }
+    let Root, FromRadioType, MeshPacketType;
 
-      setMode(mode) {
-        // Скрыть все формы
-        document.querySelectorAll('[id^="conn-form-"]').forEach(el => el.style.display = 'none');
-        // Показать нужную
-        const form = document.getElementById(`conn-form-${mode}`);
-        if (form) form.style.display = 'block';
-        this.mode = mode;
-      }
+    // Загрузка Protobuf
+    protobuf.load("virtual_meshtastic", MESH_PROTO_JSON, function (err, root) {
+      if (err) return console.error(err);
+      Root = root;
+      // Получаем типы сообщений
+      FromRadioType = root.lookupType("meshtastic.FromRadio");
+      MeshPacketType = root.lookupType("meshtastic.MeshPacket");
+      logger.log("Protobuf схема загружена успешно", "SYS");
+    });
 
-      // --- СИМУЛЯЦИЯ (ДЛЯ РУДИ) ---
-      startSimulation() {
-        this.isSim = true;
-        this.updateStatus(true, 'Симуляция');
+    // UUIDs для сервисов Meshtastic
+    const UUIDS = {
+      SERVICE: '6ba1b218-102e-462f-a498-565df2d75a3d',
+      FROMRADIO: '2c55e69e-4993-11ea-8797-2e728ce88125', // Уведомления от радио
+      TORADIO: 'f75c76d2-129e-4dad-a1dd-7866124401e7'  // Отправка на радио
+    };
 
-        app.user.id = '!RUDY01';
-        app.user.name = 'Rudy PC';
-        document.getElementById('my-name').textContent = app.user.name;
-        document.getElementById('my-batt').textContent = '100%';
-        document.getElementById('my-region').textContent = 'RU';
+    const bleManager = {
+      device: null,
+      server: null,
+      toRadioChar: null,
 
-        logger.info('Запущена симуляция сети.');
-        showToast('Режим симуляции активен', 'success');
+      async connect() {
+        if (!navigator.bluetooth) return alert('Ваш браузер не поддерживает Web Bluetooth');
+        if (!FromRadioType) return alert('Библиотека Protobuf еще не загрузилась. Подождите пару секунд.');
 
-        // Симулируем входящие узлы
-        this.addSimNode('!ALICE', 'Alice_Fox', 95);
-        this.addSimNode('!BOBBY', 'Bob_Builder', 80);
-
-        // Симулируем входящие сообщения (в разнобой, чтобы проверить сортировку)
-        setTimeout(() => {
-          chatEngine.incomingMessage({ id: 101, fromId: '!ALICE', fromName: 'Alice_Fox', text: 'Привет! Есть кто в канале?', timestamp: Date.now() - 50000 });
-        }, 1000);
-
-        setTimeout(() => {
-          chatEngine.incomingMessage({ id: 102, fromId: '!BOBBY', fromName: 'Bob_Builder', text: 'Да, я тут. Настраиваю ноду.', timestamp: Date.now() - 40000 });
-        }, 2500);
-
-        // Проверка дедупликации (шлем дубль сообщения Алисы)
-        setTimeout(() => {
-          logger.debug('Test: Sending duplicate packet...');
-          chatEngine.incomingMessage({ id: 101, fromId: '!ALICE', fromName: 'Alice_Fox', text: 'Привет! Есть кто в канале?', timestamp: Date.now() - 50000 });
-        }, 3000);
-
-        // Рандомные сообщения раз в 10 сек
-        setInterval(() => {
-          if (Math.random() > 0.7) {
-            chatEngine.incomingMessage({
-              id: Math.floor(Math.random() * 999999),
-              fromId: '!ALICE',
-              fromName: 'Alice_Fox',
-              text: 'Ping check... RSSI: -' + Math.floor(Math.random() * 100),
-              timestamp: Date.now()
-            });
-          }
-        }, 10000);
-      }
-
-      addSimNode(id, name, batt) {
-        app.nodes.set(id, { user: { longName: name }, snr: 10, lastHeard: Date.now() });
-        this.renderNodes();
-      }
-
-      // --- BLE IMPLEMENTATION ---
-      async connectBLE() {
         try {
-          logger.info('Запрос BLE устройства...');
-          const device = await navigator.bluetooth.requestDevice({
+          logger.log("Поиск устройства...", "BLE");
+          this.device = await navigator.bluetooth.requestDevice({
             filters: [{ services: [UUIDS.SERVICE] }]
           });
 
-          device.addEventListener('gattserverdisconnected', () => this.handleDisconnect());
+          this.device.addEventListener('gattserverdisconnected', () => {
+            logger.log("Устройство отключено", "BLE");
+            ui.setStatus(false);
+            AppState.isConnected = false;
+          });
 
-          logger.info('Подключение к GATT...');
-          const server = await device.gatt.connect();
+          const server = await this.device.gatt.connect();
+          logger.log("GATT подключен", "BLE");
+
           const service = await server.getPrimaryService(UUIDS.SERVICE);
 
-          const fromRadio = await service.getCharacteristic(UUIDS.FROMRADIO);
-          await fromRadio.startNotifications();
-          fromRadio.addEventListener('characteristicvaluechanged', (e) => this.handleBleData(e));
+          // Подписываемся на входящие данные
+          const fromRadioChar = await service.getCharacteristic(UUIDS.FROMRADIO);
+          await fromRadioChar.startNotifications();
+          fromRadioChar.addEventListener('characteristicvaluechanged', (e) => this.handleData(e));
 
-          // Пишем ToRadio (для отправки)
+          // Характеристика для записи
           this.toRadioChar = await service.getCharacteristic(UUIDS.TORADIO);
 
-          this.device = device;
-          this.updateStatus(true, 'Bluetooth');
-          logger.info('BLE подключено успешно!');
+          AppState.isConnected = true;
+          ui.setStatus(true);
+          logger.log("Успешное подключение! Ожидание пакетов...", "BLE");
 
-          // В реальности здесь нужно отправить Protobuf handshake
-          // Но так как у нас нет либы, мы просто показываем лог
-          logger.warn('ВНИМАНИЕ: Для реальной работы нужна библиотека meshtastic.js или protobuf.js для декодирования.');
-
-        } catch (e) {
-          logger.error('BLE Error: ' + e);
-          showToast('Ошибка подключения BLE', 'error');
+          // При подключении, возможно, стоит запросить конфиг, но пока просто слушаем
+        } catch (error) {
+          logger.log("Ошибка: " + error, "ERROR");
         }
-      }
+      },
 
-      handleBleData(event) {
-        const value = event.target.value;
-        const data = new Uint8Array(value.buffer);
-        logger.debug(`Получено байт (BLE): ${data.length}`);
-        // Здесь должен быть Protobuf Decoder.
-        // Пока мы не можем декодировать без библиотеки, но структура готова.
-      }
+      handleData(event) {
+        const buffer = new Uint8Array(event.target.value.buffer);
+        logger.log(`Получено ${buffer.length} байт`, "RX");
 
-      // --- SERIAL IMPLEMENTATION ---
-      async connectSerial() {
-        if (!navigator.serial) return showToast('Browser not supported', 'error');
         try {
-          const port = await navigator.serial.requestPort();
-          await port.open({ baudRate: 115200 });
-          this.updateStatus(true, 'Serial/USB');
+          // 1. Декодируем обертку FromRadio
+          const msg = FromRadioType.decode(buffer);
 
-          // Чтение стрима...
-          const reader = port.readable.getReader();
-          this.serialLoop(reader);
+          // Логика обработки разных типов пакетов внутри FromRadio
+
+          // А) Это информация о узле (NodeInfo)
+          if (msg.nodeInfo) {
+            const node = msg.nodeInfo;
+            AppState.nodes.set(node.num, node);
+            logger.log(`Обновлен узел: ${node.user?.longName}`, "INFO");
+          }
+
+          // Б) Это пакет с данными (MeshPacket)
+          if (msg.packet) {
+            const pkt = msg.packet;
+
+            // Если есть декодированные данные (payload)
+            if (pkt.decoded && pkt.decoded.payload) {
+              const portnum = pkt.decoded.portnum;
+
+              // TEXT_MESSAGE_APP = 1
+              if (portnum === 1) {
+                const textBytes = pkt.decoded.payload;
+                const text = new TextDecoder().decode(textBytes);
+
+                logger.log(`ЧАТ от ${pkt.from}: ${text}`, "CHAT");
+
+                chat.addMessage({
+                  id: pkt.id,
+                  from: pkt.from,
+                  text: text,
+                  time: pkt.rxTime || (Date.now() / 1000)
+                });
+
+                // Если вкладка чата не активна, можно показать уведомление
+                if (!document.getElementById('view-chat').classList.contains('active')) {
+                  logger.log("Новое сообщение в чате!", "ALERT");
+                }
+              } else {
+                logger.log(`Пакет другого типа (portnum: ${portnum})`, "RX");
+              }
+            }
+          }
+
         } catch (e) {
-          logger.error(e);
+          logger.log("Ошибка декодирования Protobuf: " + e.message, "ERROR");
         }
+      },
+
+      async sendText(text) {
+        if (!this.toRadioChar) return;
+        // Здесь нужна сложная логика кодирования ToRadio -> MeshPacket -> Data
+        // Для простоты в "One file" проекте без полного стека MeshtasticJS отправка часто ломается.
+        // Я сделаю заглушку с логом, так как корректно собрать ToRadio пакет вручную очень сложно без полной схемы.
+        alert("Отправка в этой упрощенной версии пока не реализована (требуется полный Protobuf Encoder). Но прием работает!");
       }
+    };
 
-      async serialLoop(reader) {
-        while (true) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          // Тут данные приходят кусками, нужен буфер сборки пакетов
-          logger.debug(`Serial data: ${value.length} bytes`);
-        }
+    // =================================================================
+    // 5. SIMULATION MODE (Для Руди, чтобы проверить интерфейс)
+    // =================================================================
+    const Simulation = {
+      start() {
+        logger.log("Запуск режима симуляции...", "SIM");
+        AppState.isConnected = true;
+        ui.setStatus(true);
+        AppState.myId = 12345;
+
+        // 1. Притворимся, что получили инфо об узлах
+        setTimeout(() => {
+          chat.addMessage({ id: 101, from: 999, fromName: 'Alice', text: 'Привет, Руди! Как связь?', time: Date.now() / 1000 });
+          logger.log("Симуляция: Пришел пакет от Alice", "SIM");
+        }, 1000);
+
+        setTimeout(() => {
+          chat.addMessage({ id: 102, from: 888, fromName: 'Bob', text: 'Я тоже тут. Нода работает.', time: (Date.now() / 1000) + 2 });
+          logger.log("Симуляция: Пришел пакет от Bob", "SIM");
+        }, 3000);
+
+        // Тест дедупликации (повтор сообщения Алисы)
+        setTimeout(() => {
+          chat.addMessage({ id: 101, from: 999, fromName: 'Alice', text: 'Привет, Руди! Как связь?', time: Date.now() / 1000 });
+          logger.log("Симуляция: Пришел дубликат (должен быть проигнорирован)", "SIM");
+        }, 4000);
       }
+    };
 
-      // --- COMMON SEND ---
-      async sendPacket(text) {
-        if (this.isSim) {
-          logger.info(`[SIM] Отправка в эфир: "${text}"`);
-          return;
-        }
+    // =================================================================
+    // EVENTS
+    // =================================================================
+    document.getElementById('btn-connect').onclick = () => bleManager.connect();
+    document.getElementById('btn-sim').onclick = () => Simulation.start();
 
-        if (this.mode === 'ble' && this.toRadioChar) {
-          // Здесь нужно кодировать Protobuf
-          // const encoded = MeshProto.encode({ ... }); 
-          // await this.toRadioChar.writeValue(encoded);
-          logger.warn('Отправка на реальное устройство требует Protobuf encoder');
-        }
-      }
-
-      updateStatus(connected, text) {
-        app.isConnected = connected;
-        const badge = document.getElementById('globalStatus');
-        const txt = document.getElementById('statusText');
-
-        if (connected) {
-          badge.className = 'status-badge connected';
-          txt.textContent = text || 'Подключено';
-        } else {
-          badge.className = 'status-badge disconnected';
-          txt.textContent = 'Отключено';
-        }
-      }
-
-      handleDisconnect() {
-        this.updateStatus(false);
-        showToast('Устройство отключено', 'warning');
-      }
-
-      renderNodes() {
-        const container = document.getElementById('node-list-container');
-        container.innerHTML = '';
-        app.nodes.forEach((node, id) => {
-          const el = document.createElement('div');
-          el.className = 'node-card';
-          el.innerHTML = `
-            <div class="node-header">${node.user.longName || id}</div>
-            <div class="node-stat"><span>ID:</span> <span class="node-val">${id}</span></div>
-            <div class="node-stat"><span>SNR:</span> <span class="node-val">${node.snr || '?'} dB</span></div>
-            <div class="node-stat"><span>Last seen:</span> <span class="node-val">${new Date(node.lastHeard).toLocaleTimeString()}</span></div>
-          `;
-          container.appendChild(el);
+    document.getElementById('btn-send').onclick = () => {
+      const inp = document.getElementById('msg-input');
+      const text = inp.value.trim();
+      if (text) {
+        // Добавляем себе в чат визуально
+        chat.addMessage({
+          id: Math.random(),
+          from: AppState.myId || 0,
+          fromName: 'Me',
+          text: text,
+          time: Date.now() / 1000
         });
+        inp.value = '';
+
+        // Пытаемся отправить (если подключено)
+        if (AppState.isConnected && bleManager.toRadioChar) {
+          bleManager.sendText(text);
+        }
       }
-    }
-
-    // Инициализация
-    const connManager = new ConnectionManager();
-
-    // Привязка кнопок
-    document.getElementById('btn-ble-scan').onclick = () => connManager.connectBLE();
-    document.getElementById('btn-serial-connect').onclick = () => connManager.connectSerial();
-
-    // Автозапуск на вкладку "Connection"
-    router.navigate('connection');
-
+    };
   </script>
 </body>
 
