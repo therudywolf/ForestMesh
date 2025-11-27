@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meshtastic Control Panel - Professional Edition</title>
+  <title>Meshtastic Control Panel - Rudy Edition</title>
   <style>
     :root {
-      --color-bg-primary: #0a0e1a;
-      --color-bg-secondary: #131829;
-      --color-bg-tertiary: #1a1f36;
-      --color-accent: #67c5e6;
-      --color-accent-hover: #4db8e0;
-      --color-success: #4ade80;
-      --color-warning: #fbbf24;
-      --color-error: #ef4444;
-      --color-text-primary: #e5e7eb;
-      --color-text-secondary: #9ca3af;
-      --color-border: #374151;
-      --color-border-light: #4b5563;
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --success: #22c55e;
+      --warning: #eab308;
+      --error: #ef4444;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: #475569;
     }
 
     * {
@@ -27,831 +27,896 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: var(--color-bg-primary);
-      color: var(--color-text-primary);
-      line-height: 1.6;
-      overflow-x: hidden;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-main);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
 
-    .app-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    header {
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
+    /* Layout */
+    .app-header {
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 15px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
+      flex-shrink: 0;
     }
 
-    h1 {
-      font-size: 24px;
+    .header-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .main-layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 250px;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+    }
+
+    .nav-btn {
+      text-align: left;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 5px;
+    }
+
+    .nav-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-main);
+    }
+
+    .nav-btn.active {
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
       font-weight: 600;
-      color: var(--color-accent);
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      position: relative;
+    }
+
+    .view-section {
+      display: none;
+      max-width: 1000px;
+      margin: 0 auto;
+      animation: fadeIn 0.3s;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(5px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Components */
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+      color: var(--accent);
     }
 
     .status-badge {
-      display: inline-flex;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: flex;
       align-items: center;
       gap: 8px;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
     }
 
     .status-badge.disconnected {
       background: rgba(239, 68, 68, 0.2);
-      color: var(--color-error);
-    }
-
-    .status-badge.connecting {
-      background: rgba(251, 191, 36, 0.2);
-      color: var(--color-warning);
+      color: var(--error);
     }
 
     .status-badge.connected {
-      background: rgba(74, 222, 128, 0.2);
-      color: var(--color-success);
+      background: rgba(34, 197, 94, 0.2);
+      color: var(--success);
     }
 
     .status-indicator {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: currentColor;
-      animation: pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 8px currentColor;
     }
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    .tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-      overflow-x: auto;
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 10px;
-    }
-
-    .tab-button {
-      padding: 10px 20px;
-      background: transparent;
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      color: var(--color-text-secondary);
-      cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .tab-button:hover {
-      background: var(--color-bg-tertiary);
-      color: var(--color-text-primary);
-    }
-
-    .tab-button.active {
-      background: var(--color-accent);
-      color: var(--color-bg-primary);
-      border-color: var(--color-accent);
-    }
-
-    .tab-content {
-      display: none;
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 20px;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    .section {
-      margin-bottom: 20px;
-    }
-
-    .section-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: var(--color-accent);
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--color-text-secondary);
-    }
-
-    input[type="text"],
-    input[type="number"],
+    /* Forms */
+    input,
     select,
     textarea {
       width: 100%;
-      padding: 10px 12px;
-      background: var(--color-bg-tertiary);
-      border: 1px solid var(--color-border);
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      padding: 10px;
       border-radius: 6px;
-      color: var(--color-text-primary);
-      font-size: 14px;
-      transition: border-color 0.2s;
+      margin-bottom: 10px;
+      font-family: inherit;
     }
 
     input:focus,
-    select:focus,
     textarea:focus {
-      outline: none;
-      border-color: var(--color-accent);
+      outline: 2px solid var(--accent);
+      border-color: transparent;
     }
 
     button {
       padding: 10px 20px;
-      background: var(--color-accent);
-      border: none;
       border-radius: 6px;
-      color: var(--color-bg-primary);
-      font-size: 14px;
+      border: none;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: opacity 0.2s;
     }
 
     button:hover {
-      background: var(--color-accent-hover);
-      transform: translateY(-1px);
-    }
-
-    button:active {
-      transform: translateY(0);
+      opacity: 0.9;
     }
 
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      transform: none;
     }
 
-    button.secondary {
-      background: var(--color-bg-tertiary);
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border);
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
     }
 
-    button.danger {
-      background: var(--color-error);
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+    }
+
+    .btn-danger {
+      background: var(--error);
       color: white;
     }
 
-    .button-group {
+    .btn-group {
       display: flex;
       gap: 10px;
-      flex-wrap: wrap;
+      margin-top: 10px;
     }
 
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .info-card {
-      background: var(--color-bg-tertiary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 15px;
-    }
-
-    .info-label {
-      font-size: 12px;
-      color: var(--color-text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 5px;
-    }
-
-    .info-value {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--color-text-primary);
-    }
-
-    .log-console {
-      background: var(--color-bg-primary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 15px;
-      max-height: 500px;
-      overflow-y: auto;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-    }
-
-    .log-entry {
-      padding: 5px 0;
-      border-bottom: 1px solid var(--color-border);
-      display: flex;
-      gap: 10px;
-    }
-
-    .log-entry:last-child {
-      border-bottom: none;
-    }
-
-    .log-time {
-      color: var(--color-text-secondary);
-      min-width: 90px;
-    }
-
-    .log-level {
-      min-width: 60px;
-      font-weight: 600;
-    }
-
-    .log-level.DEBUG { color: var(--color-text-secondary); }
-    .log-level.INFO { color: var(--color-accent); }
-    .log-level.WARN { color: var(--color-warning); }
-    .log-level.ERROR { color: var(--color-error); }
-
-    .log-message {
-      flex: 1;
-      word-break: break-word;
-    }
-
-    .device-list {
+    /* Chat Specific Interface */
+    .chat-container {
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      margin-top: 15px;
-    }
-
-    .device-item {
-      background: var(--color-bg-tertiary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 15px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .device-item:hover {
-      border-color: var(--color-accent);
-      background: rgba(103, 197, 230, 0.1);
-    }
-
-    .device-info {
-      flex: 1;
-    }
-
-    .device-name {
-      font-weight: 600;
-      font-size: 16px;
-      margin-bottom: 5px;
-    }
-
-    .device-details {
-      font-size: 12px;
-      color: var(--color-text-secondary);
-    }
-
-    .rssi-indicator {
-      padding: 5px 10px;
-      background: rgba(103, 197, 230, 0.2);
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .slider-container {
-      margin: 15px 0;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      height: 6px;
-      background: var(--color-bg-tertiary);
-      border-radius: 3px;
-      outline: none;
-      -webkit-appearance: none;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
-      background: var(--color-accent);
-      border-radius: 50%;
-      cursor: pointer;
-    }
-
-    input[type="range"]::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
-      background: var(--color-accent);
-      border-radius: 50%;
-      cursor: pointer;
-      border: none;
-    }
-
-    .message-list {
-      max-height: 400px;
-      overflow-y: auto;
-      background: var(--color-bg-primary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 15px;
-    }
-
-    .message-item {
-      background: var(--color-bg-tertiary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 10px;
-    }
-
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 12px;
-      color: var(--color-text-secondary);
-    }
-
-    .message-body {
-      color: var(--color-text-primary);
-      word-break: break-word;
-    }
-
-    .node-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--color-bg-tertiary);
-      border-radius: 6px;
+      height: calc(100vh - 140px);
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
       overflow: hidden;
     }
 
-    .node-table th,
-    .node-table td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid var(--color-border);
-    }
-
-    .node-table th {
-      background: var(--color-bg-primary);
-      font-weight: 600;
-      color: var(--color-accent);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .node-table tbody tr:hover {
-      background: rgba(103, 197, 230, 0.1);
-    }
-
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal.active {
+    .chat-messages {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
       display: flex;
+      flex-direction: column;
+      gap: 15px;
     }
 
-    .modal-content {
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 30px;
-      max-width: 500px;
-      width: 90%;
+    .message-bubble {
+      max-width: 70%;
+      padding: 10px 15px;
+      border-radius: 12px;
+      position: relative;
+      word-wrap: break-word;
+      animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
-    .modal-title {
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: var(--color-accent);
-    }
-
-    .modal-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 20px;
-    }
-
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      z-index: 2000;
-      min-width: 300px;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
+    @keyframes popIn {
       from {
-        transform: translateX(400px);
+        transform: scale(0.9);
         opacity: 0;
       }
+
       to {
-        transform: translateX(0);
+        transform: scale(1);
         opacity: 1;
       }
     }
 
-    .toast.success { border-left: 4px solid var(--color-success); }
-    .toast.error { border-left: 4px solid var(--color-error); }
-    .toast.warning { border-left: 4px solid var(--color-warning); }
-    .toast.info { border-left: 4px solid var(--color-accent); }
-
-    .spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(103, 197, 230, 0.3);
-      border-top-color: var(--color-accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .message-bubble.incoming {
+      align-self: flex-start;
+      background: var(--bg-tertiary);
+      border-bottom-left-radius: 2px;
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    .message-bubble.outgoing {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #0f172a;
+      border-bottom-right-radius: 2px;
     }
 
-    .help-box {
-      background: rgba(103, 197, 230, 0.1);
-      border: 1px solid var(--color-accent);
-      border-radius: 6px;
+    .msg-meta {
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+      opacity: 0.8;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .msg-time {
+      font-size: 0.7rem;
+      opacity: 0.6;
+      margin-top: 5px;
+      text-align: right;
+    }
+
+    .chat-input-area {
       padding: 15px;
-      margin-bottom: 20px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
     }
 
-    .help-box h3 {
-      color: var(--color-accent);
-      font-size: 16px;
+    /* Logs */
+    .log-terminal {
+      background: #000;
+      color: #0f0;
+      font-family: 'Consolas', 'Courier New', monospace;
+      padding: 15px;
+      border-radius: 8px;
+      height: 400px;
+      overflow-y: auto;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+    }
+
+    .log-line {
+      margin-bottom: 4px;
+      border-bottom: 1px solid #111;
+      padding-bottom: 2px;
+    }
+
+    .log-time {
+      color: #666;
+      margin-right: 10px;
+    }
+
+    .log-DEBUG {
+      color: #888;
+    }
+
+    .log-INFO {
+      color: #38bdf8;
+    }
+
+    .log-WARN {
+      color: #fbbf24;
+    }
+
+    .log-ERROR {
+      color: #ef4444;
+    }
+
+    /* Node Table */
+    .node-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 15px;
+    }
+
+    .node-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 15px;
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
       margin-bottom: 10px;
+      font-weight: bold;
+      color: var(--accent);
     }
 
-    .help-box ol {
-      margin-left: 20px;
+    .node-stat {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+      color: var(--text-muted);
     }
 
-    .help-box li {
-      margin: 5px 0;
-      font-size: 14px;
+    .node-val {
+      color: var(--text-main);
     }
 
-    @media (max-width: 768px) {
-      .app-container {
-        padding: 10px;
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      padding: 12px 20px;
+      background: var(--bg-secondary);
+      border-left: 4px solid var(--accent);
+      color: var(--text-main);
+      border-radius: 4px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+      animation: slideInRight 0.3s;
+      min-width: 250px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
       }
 
-      .info-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .tabs {
-        flex-wrap: wrap;
-      }
-
-      .tab-button {
-        flex: 1;
-        min-width: 100px;
+      to {
+        transform: translateX(0);
       }
     }
   </style>
 </head>
+
 <body>
-  <div class="app-container">
-    <header>
-      <h1>🛰️ Meshtastic Control Panel</h1>
-      <div class="status-badge disconnected" id="connectionStatus">
-        <span class="status-indicator"></span>
-        <span id="statusText">Disconnected</span>
-      </div>
-    </header>
 
-    <div class="tabs">
-      <button class="tab-button active" data-tab="connection">🔌 Connection</button>
-      <button class="tab-button" data-tab="dashboard">📊 Dashboard</button>
-      <button class="tab-button" data-tab="lora">📡 LoRa Config</button>
-      <button class="tab-button" data-tab="messages">💬 Messages</button>
-      <button class="tab-button" data-tab="nodes">🌐 Nodes</button>
-      <button class="tab-button" data-tab="admin">⚙️ Admin</button>
-      <button class="tab-button" data-tab="logs">📝 Logs</button>
+  <input type="hidden" id="current-connection-type" value="none">
+
+  <header class="app-header">
+    <div class="header-title">
+      <span>🛰️ Meshtastic Rudy-Panel</span>
     </div>
+    <div class="status-badge disconnected" id="globalStatus">
+      <span class="status-indicator"></span>
+      <span id="statusText">Отключено</span>
+    </div>
+  </header>
 
-    <!-- Connection Tab -->
-    <div class="tab-content active" id="connection">
-      <div class="help-box">
-        <h3>📖 Quick Start Guide for Heltec V4</h3>
-        <ol>
-          <li>Ensure Bluetooth is enabled on your Heltec V4 device</li>
-          <li>Open this page in Chrome or Edge browser (required for Web Bluetooth)</li>
-          <li>Click the "BLE (Bluetooth)" tab below</li>
-          <li>Click "Scan for Devices" button</li>
-          <li>Select your Heltec V4 from the list</li>
-          <li>Wait for configuration sync (monitor in Logs tab)</li>
-          <li>Navigate to Dashboard to view device information</li>
-        </ol>
-      </div>
+  <div class="main-layout">
+    <nav class="sidebar">
+      <button class="nav-btn active" onclick="router.navigate('connection')">🔌 Подключение</button>
+      <button class="nav-btn" onclick="router.navigate('chat')">💬 Чат (RU)</button>
+      <button class="nav-btn" onclick="router.navigate('nodes')">👥 Узлы</button>
+      <button class="nav-btn" onclick="router.navigate('logs')">📝 Логи</button>
+    </nav>
 
-      <div class="tabs">
-        <button class="tab-button active" data-tab="ble-tab">📱 BLE (Bluetooth)</button>
-        <button class="tab-button" data-tab="serial-tab">🔌 Serial/USB</button>
-        <button class="tab-button" data-tab="tcp-tab">🌐 TCP/Network</button>
-      </div>
+    <main class="content-area">
 
-      <!-- BLE Connection -->
-      <div class="tab-content active" id="ble-tab" style="margin-top: 20px;">
-        <div class="section">
-          <h2 class="section-title">Bluetooth Low Energy Connection</h2>
-          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Recommended for Heltec V4 and other wireless Meshtastic devices. Requires Chrome or Edge browser.
+      <div id="view-connection" class="view-section active">
+        <div class="card">
+          <h2>Настройка соединения</h2>
+          <p style="color: var(--text-muted); margin-bottom: 15px;">Выберите способ подключения к устройству Meshtastic.
           </p>
-          <div class="button-group">
-            <button id="bleScanBtn">🔍 Scan for Devices</button>
-            <button id="bleDisconnectBtn" class="secondary" disabled>Disconnect</button>
+
+          <div class="btn-group" style="margin-bottom: 20px;">
+            <button class="btn-secondary" onclick="connManager.setMode('ble')">Bluetooth (WebBLE)</button>
+            <button class="btn-secondary" onclick="connManager.setMode('serial')">USB (Serial)</button>
+            <button class="btn-secondary" onclick="connManager.setMode('http')">Wi-Fi (HTTP)</button>
+            <button class="btn-primary" onclick="connManager.setMode('sim')">🤖 Симуляция</button>
           </div>
-          <div id="bleDeviceList" class="device-list"></div>
+
+          <div id="conn-form-ble" style="display:none;">
+            <p>Рекомендуется для Heltec V4/ESP32. Требуется Chrome/Edge.</p>
+            <div class="btn-group">
+              <button class="btn-primary" id="btn-ble-scan">🔍 Найти устройство</button>
+              <button class="btn-danger" id="btn-ble-disconnect" disabled>Отключить</button>
+            </div>
+          </div>
+
+          <div id="conn-form-serial" style="display:none;">
+            <p>Прямое подключение через USB. Убедитесь, что драйверы установлены.</p>
+            <div class="btn-group">
+              <button class="btn-primary" id="btn-serial-connect">🔌 Подключить порт</button>
+            </div>
+          </div>
+
+          <div id="conn-form-http" style="display:none;">
+            <label>IP адрес устройства</label>
+            <input type="text" id="http-ip" placeholder="192.168.1.xxx" value="client.meshtastic.org">
+            <div class="btn-group">
+              <button class="btn-primary" id="btn-http-connect">🌐 Подключить</button>
+            </div>
+          </div>
+
+          <div id="conn-form-sim" style="display:none;">
+            <p style="color: var(--success)">Режим тестирования интерфейса. Генерирует виртуальные пакеты для проверки
+              сортировки чата.</p>
+            <button class="btn-primary" onclick="connManager.startSimulation()">🚀 Запустить симуляцию</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Информация об устройстве</h2>
+          <div class="node-grid">
+            <div class="node-card"><span class="node-stat">Мое Имя</span><strong class="node-val"
+                id="my-name">...</strong></div>
+            <div class="node-card"><span class="node-stat">Батарея</span><strong class="node-val"
+                id="my-batt">...</strong></div>
+            <div class="node-card"><span class="node-stat">Регион</span><strong class="node-val"
+                id="my-region">...</strong></div>
+            <div class="node-card"><span class="node-stat">Пакеты в очереди</span><strong class="node-val"
+                id="queue-size">0</strong></div>
+          </div>
         </div>
       </div>
 
-      <!-- Serial Connection -->
-      <div class="tab-content" id="serial-tab" style="margin-top: 20px;">
-        <div class="section">
-          <h2 class="section-title">Serial/USB Connection</h2>
-          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Direct USB connection. Requires Chrome or Edge browser and device in PROTO mode.
-          </p>
-          <div class="button-group">
-            <button id="serialConnectBtn">🔌 Connect Serial Port</button>
-            <button id="serialDisconnectBtn" class="secondary" disabled>Disconnect</button>
+      <div id="view-chat" class="view-section">
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-history">
+            <div style="text-align: center; color: var(--text-muted); margin-top: 20px;">
+              Канал #LongFast / RU<br>Ожидание сообщений...
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <input type="text" id="msg-input" placeholder="Напишите сообщение..."
+              onkeypress="if(event.key === 'Enter') chatEngine.send()">
+            <button class="btn-primary" onclick="chatEngine.send()">📤</button>
           </div>
         </div>
       </div>
 
-      <!-- TCP Connection -->
-      <div class="tab-content" id="tcp-tab" style="margin-top: 20px;">
-        <div class="section">
-          <h2 class="section-title">TCP/Network Connection</h2>
-          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Connect to devices with WiFi/Ethernet. Requires network access to device.
-          </p>
-          <div class="form-group">
-            <label>Device IP Address and Port</label>
-            <input type="text" id="tcpAddress" placeholder="192.168.1.100:4403" value="192.168.1.1:4403">
-          </div>
-          <div class="button-group">
-            <button id="tcpConnectBtn">🌐 Connect TCP</button>
-            <button id="tcpDisconnectBtn" class="secondary" disabled>Disconnect</button>
-          </div>
+      <div id="view-nodes" class="view-section">
+        <h2>Список узлов (Mesh)</h2>
+        <div class="node-grid" id="node-list-container">
         </div>
       </div>
-    </div>
 
-    <!-- Dashboard Tab -->
-    <div class="tab-content" id="dashboard">
-      <div class="section">
-        <h2 class="section-title">Device Information</h2>
-        <div class="info-grid" id="deviceInfo">
-          <div class="info-card">
-            <div class="info-label">Node ID</div>
-            <div class="info-value" id="nodeId">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Hardware Model</div>
-            <div class="info-value" id="hwModel">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Firmware Version</div>
-            <div class="info-value" id="fwVersion">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Battery Level</div>
-            <div class="info-value" id="battery">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Region</div>
-            <div class="info-value" id="region">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Channel Name</div>
-            <div class="info-value" id="channelName">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Known Nodes</div>
-            <div class="info-value" id="nodeCount">0</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Uptime</div>
-            <div class="info-value" id="uptime">-</div>
-          </div>
+      <div id="view-logs" class="view-section">
+        <h2>Системные логи</h2>
+        <div class="log-terminal" id="log-output"></div>
+        <div class="btn-group">
+          <button class="btn-secondary" onclick="logger.clear()">Очистить</button>
         </div>
       </div>
-    </div>
 
-    <!-- LoRa Config Tab -->
-    <div class="tab-content" id="lora">
-      <div class="section">
-        <h2 class="section-title">LoRa Configuration</h2>
-        <div class="form-group">
-          <label>TX Power: <span id="txPowerValue">20</span> dBm</label>
-          <div class="slider-container">
-            <input type="range" id="txPower" min="0" max="30" value="20">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Spreading Factor</label>
-          <select id="spreadingFactor">
-            <option value="7">SF7 (Fastest, shortest range)</option>
-            <option value="8">SF8</option>
-            <option value="9">SF9</option>
-            <option value="10" selected>SF10</option>
-            <option value="11">SF11</option>
-            <option value="12">SF12 (Slowest, longest range)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Bandwidth</label>
-          <select id="bandwidth">
-            <option value="62.5">62.5 kHz</option>
-            <option value="125">125 kHz</option>
-            <option value="250" selected>250 kHz</option>
-            <option value="500">500 kHz</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Coding Rate</label>
-          <select id="codingRate">
-            <option value="5" selected>4/5</option>
-            <option value="6">4/6</option>
-            <option value="7">4/7</option>
-            <option value="8">4/8</option>
-          </select>
-        </div>
-        <div class="button-group">
-          <button id="applyLoraBtn">✅ Apply Configuration</button>
-          <button class="secondary" id="revertLoraBtn">↶ Revert Changes</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Messages Tab -->
-    <div class="tab-content" id="messages">
-      <div class="section">
-        <h2 class="section-title">Send Message</h2>
-        <div class="form-group">
-          <label>Recipient</label>
-          <select id="messageRecipient">
-            <option value="broadcast">📢 Broadcast (All Nodes)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Message</label>
-          <textarea id="messageText" rows="3" placeholder="Type your message here..."></textarea>
-        </div>
-        <div class="button-group">
-          <button id="sendMessageBtn">📤 Send Message</button>
-          <button class="secondary" id="clearMessagesBtn">🗑️ Clear History</button>
-        </div>
-      </div>
-      <div class="section">
-        <h2 class="section-title">Message History</h2>
-        <div class="message-list" id="messageList">
-          <p style="color: var(--color-text-secondary); text-align: center;">No messages yet</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Nodes Tab -->
-    <div class="tab-content" id="nodes">
-      <div class="section">
-        <h2 class="section-title">Mesh Network Nodes</h2>
-        <div style="overflow-x: auto;">
-          <table class="node-table" id="nodeTable">
-            <thead>
-              <tr>
-                <th>Node ID</th>
-                <th>Name</th>
-                <th>Last Heard</th>
-                <th>RSSI</th>
-                <th>SNR</th>
-                <th>Hops</th>
-              </tr>
-            </thead>
-            <tbody id="nodeTableBody">
-              <tr>
-                <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">No nodes discovered yet</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Admin Tab -->
-    <div class="tab-content" id="admin">
-      <div class="section">
-        <h2 class="section-title">Device Administration</h2>
-        <div class="form-group">
-          <label>Device Long Name</label>
-          <input type="text" id="deviceLongName" placeholder="My Meshtastic Device" maxlength="40">
-        </div>
-        <div class="form-group">
-          <label>Device Short Name</label>
-          <input type="text" id="deviceShortName" placeholder="MESH" maxlength="4">
-        </div>
-        <div class="button-group">
-          <button id="updateDeviceNameBtn">💾 Update Device Name</button>
-        </div>
-      </div>
-      <div class="section">
-        <h2 class="section-title">Device Actions</h2>
-        <div class="button-group">
-          <button class="secondary" id="rebootDeviceBtn">🔄 Reboot Device</button>
-          <button class="secondary" id="exportConfigBtn">📥 Export Configuration</button>
-          <button class="danger" id="factoryResetBtn">⚠️ Factory Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Logs Tab -->
-    <div class="tab-content" id="logs">
-      <div class="section">
-        <h2 class="section-title">System Logs</h2>
-        <div class="button-group" style="margin-bottom: 15px;">
-          <button class="secondary" id="clearLogsBtn">🗑️ Clear Logs</button>
-          <button class="secondary" id="exportLogsBtn">📥 Export Logs</button>
-          <select id="logLevelFilter" style="width: auto;">
-            <option value="ALL">All Levels</option>
-            <option value="DEBUG">DEBUG</option>
-            <option value="INFO">INFO</option>
-            <option value="WARN">WARN</option>
-            <option value="ERROR">ERROR</option>
-          </select>
-        </div>
-        <div class="log-console" id="logConsole"></div>
-      </div>
-    </div>
+    </main>
   </div>
 
-  <!-- Modal for confirmations -->
-  <div class="modal" id="confirmModal">
-    <div class="modal-content">
-      <h2 class="modal-title" id="modalTitle">Confirm Action</h2>
-      <p id="modalMessage">Are you sure?</p>
-      <div class="modal-buttons">
-        <button class="secondary" id="modalCancelBtn">Cancel</button>
-        <button id="modalConfirmBtn">Confirm</button>
-      </div>
-    </div>
-  </div>
+  <div class="toast-container" id="toast-area"></div>
 
-  <script src="app.js"></script>
+  <script>
+    /**
+     * 🛠️ MESHTASTIC CONTROLLER - RUDY EDITION
+     * * Исправленная версия с правильными UUID и логикой обработки сообщений.
+     */
+
+    // --- КОНСТАНТЫ MESHTASTIC (Исправленные) ---
+    const UUIDS = {
+      SERVICE: '6ba1b218-102e-462f-a498-565df2d75a3d',
+      TORADIO: 'f75c76d2-129e-4dad-a1dd-7866124401e7',
+      FROMRADIO: '2c55e69e-4993-11ea-8797-2e728ce88125',
+      FROMNUM: 'ed9da18c-a800-4f66-a670-aa7547e34453'
+    };
+
+    // --- APP STATE ---
+    const app = {
+      user: {
+        name: 'RudyController',
+        id: '!12345678'
+      },
+      nodes: new Map(), // Хранилище узлов
+      isConnected: false
+    };
+
+    // --- LOGGER ---
+    const logger = {
+      el: document.getElementById('log-output'),
+      log(level, msg) {
+        const time = new Date().toLocaleTimeString();
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${level}">${level}</span>: ${msg}`;
+        this.el.appendChild(line);
+        this.el.scrollTop = this.el.scrollHeight;
+        console.log(`[${level}] ${msg}`);
+      },
+      info(m) { this.log('INFO', m); },
+      warn(m) { this.log('WARN', m); },
+      error(m) { this.log('ERROR', m); },
+      debug(m) { this.log('DEBUG', m); },
+      clear() { this.el.innerHTML = ''; }
+    };
+
+    // --- TOAST NOTIFICATIONS ---
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toast-area');
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.style.borderLeftColor = type === 'error' ? 'var(--error)' : (type === 'success' ? 'var(--success)' : 'var(--accent)');
+      el.textContent = msg;
+      container.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+
+    // --- ROUTER ---
+    const router = {
+      navigate(viewId) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.getElementById(`view-${viewId}`).classList.add('active');
+
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        // Простая подсветка кнопки (в реальном проекте лучше по ID)
+        event && event.target && event.target.closest('.nav-btn')?.classList.add('active');
+      }
+    };
+
+    /**
+     * 🧠 CHAT ENGINE (Сердце твоей просьбы)
+     * Отвечает за проверку очередности, дедупликацию и сортировку.
+     */
+    class ChatEngine {
+      constructor() {
+        this.messages = []; // Хранилище всех сообщений
+        this.processedIds = new Set(); // Для дедупликации по ID пакета
+        this.container = document.getElementById('chat-history');
+      }
+
+      /**
+       * Главный метод приема сообщения
+       * @param {Object} msg - объект сообщения {id, fromId, fromName, text, timestamp}
+       */
+      incomingMessage(msg) {
+        // 1. Дедупликация (Deduplication)
+        if (this.processedIds.has(msg.id)) {
+          logger.debug(`Deduplicator: Ignored duplicate message ID ${msg.id}`);
+          return;
+        }
+        this.processedIds.add(msg.id);
+
+        // 2. Обогащение данными (Если знаем имя узла)
+        const node = app.nodes.get(msg.fromId);
+        if (node && node.user && node.user.longName) {
+          msg.fromName = node.user.longName;
+        }
+
+        // 3. Добавление и Сортировка (Ordering)
+        this.messages.push(msg);
+        // Сортируем по времени (старые сверху, новые снизу)
+        this.messages.sort((a, b) => a.timestamp - b.timestamp);
+
+        // 4. Рендеринг (Перерисовка)
+        this.render();
+
+        // Уведомление
+        if (document.getElementById('view-chat').style.display === 'none') {
+          showToast(`Сообщение от ${msg.fromName}`, 'info');
+        }
+      }
+
+      render() {
+        this.container.innerHTML = '';
+
+        let lastDate = null;
+
+        this.messages.forEach(msg => {
+          const date = new Date(msg.timestamp).toLocaleDateString();
+          // Разделитель дат
+          if (date !== lastDate) {
+            const sep = document.createElement('div');
+            sep.style.textAlign = 'center';
+            sep.style.fontSize = '0.8rem';
+            sep.style.opacity = '0.5';
+            sep.style.margin = '10px 0';
+            sep.textContent = date;
+            this.container.appendChild(sep);
+            lastDate = date;
+          }
+
+          const isMe = msg.fromId === app.user.id;
+          const el = document.createElement('div');
+          el.className = `message-bubble ${isMe ? 'outgoing' : 'incoming'}`;
+
+          const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+          el.innerHTML = `
+        <div class="msg-meta">
+            <span>${isMe ? 'Вы' : (msg.fromName || msg.fromId)}</span>
+        </div>
+        <div>${msg.text}</div>
+        <div class="msg-time">${timeStr}</div>
+      `;
+
+          this.container.appendChild(el);
+        });
+
+        // Скролл вниз
+        this.container.scrollTop = this.container.scrollHeight;
+      }
+
+      send() {
+        const input = document.getElementById('msg-input');
+        const text = input.value.trim();
+        if (!text) return;
+
+        if (!app.isConnected && !connManager.isSim) {
+          showToast('Нет подключения к устройству!', 'error');
+          return;
+        }
+
+        // Формируем пакет
+        const packet = {
+          id: Math.floor(Math.random() * 1000000), // В реальности генерирует устройство
+          fromId: app.user.id,
+          fromName: app.user.name,
+          text: text,
+          timestamp: Date.now()
+        };
+
+        // Отправляем через ConnectionManager
+        connManager.sendPacket(text);
+
+        // Добавляем себе в чат (оптимистичный UI)
+        this.incomingMessage(packet);
+        input.value = '';
+      }
+    }
+
+    const chatEngine = new ChatEngine();
+
+    /**
+     * 🔌 CONNECTION MANAGER
+     * Абстрагирует BLE, Serial и HTTP
+     */
+    class ConnectionManager {
+      constructor() {
+        this.mode = 'none';
+        this.device = null;
+        this.bleServer = null;
+        this.isSim = false;
+      }
+
+      setMode(mode) {
+        // Скрыть все формы
+        document.querySelectorAll('[id^="conn-form-"]').forEach(el => el.style.display = 'none');
+        // Показать нужную
+        const form = document.getElementById(`conn-form-${mode}`);
+        if (form) form.style.display = 'block';
+        this.mode = mode;
+      }
+
+      // --- СИМУЛЯЦИЯ (ДЛЯ РУДИ) ---
+      startSimulation() {
+        this.isSim = true;
+        this.updateStatus(true, 'Симуляция');
+
+        app.user.id = '!RUDY01';
+        app.user.name = 'Rudy PC';
+        document.getElementById('my-name').textContent = app.user.name;
+        document.getElementById('my-batt').textContent = '100%';
+        document.getElementById('my-region').textContent = 'RU';
+
+        logger.info('Запущена симуляция сети.');
+        showToast('Режим симуляции активен', 'success');
+
+        // Симулируем входящие узлы
+        this.addSimNode('!ALICE', 'Alice_Fox', 95);
+        this.addSimNode('!BOBBY', 'Bob_Builder', 80);
+
+        // Симулируем входящие сообщения (в разнобой, чтобы проверить сортировку)
+        setTimeout(() => {
+          chatEngine.incomingMessage({ id: 101, fromId: '!ALICE', fromName: 'Alice_Fox', text: 'Привет! Есть кто в канале?', timestamp: Date.now() - 50000 });
+        }, 1000);
+
+        setTimeout(() => {
+          chatEngine.incomingMessage({ id: 102, fromId: '!BOBBY', fromName: 'Bob_Builder', text: 'Да, я тут. Настраиваю ноду.', timestamp: Date.now() - 40000 });
+        }, 2500);
+
+        // Проверка дедупликации (шлем дубль сообщения Алисы)
+        setTimeout(() => {
+          logger.debug('Test: Sending duplicate packet...');
+          chatEngine.incomingMessage({ id: 101, fromId: '!ALICE', fromName: 'Alice_Fox', text: 'Привет! Есть кто в канале?', timestamp: Date.now() - 50000 });
+        }, 3000);
+
+        // Рандомные сообщения раз в 10 сек
+        setInterval(() => {
+          if (Math.random() > 0.7) {
+            chatEngine.incomingMessage({
+              id: Math.floor(Math.random() * 999999),
+              fromId: '!ALICE',
+              fromName: 'Alice_Fox',
+              text: 'Ping check... RSSI: -' + Math.floor(Math.random() * 100),
+              timestamp: Date.now()
+            });
+          }
+        }, 10000);
+      }
+
+      addSimNode(id, name, batt) {
+        app.nodes.set(id, { user: { longName: name }, snr: 10, lastHeard: Date.now() });
+        this.renderNodes();
+      }
+
+      // --- BLE IMPLEMENTATION ---
+      async connectBLE() {
+        try {
+          logger.info('Запрос BLE устройства...');
+          const device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: [UUIDS.SERVICE] }]
+          });
+
+          device.addEventListener('gattserverdisconnected', () => this.handleDisconnect());
+
+          logger.info('Подключение к GATT...');
+          const server = await device.gatt.connect();
+          const service = await server.getPrimaryService(UUIDS.SERVICE);
+
+          const fromRadio = await service.getCharacteristic(UUIDS.FROMRADIO);
+          await fromRadio.startNotifications();
+          fromRadio.addEventListener('characteristicvaluechanged', (e) => this.handleBleData(e));
+
+          // Пишем ToRadio (для отправки)
+          this.toRadioChar = await service.getCharacteristic(UUIDS.TORADIO);
+
+          this.device = device;
+          this.updateStatus(true, 'Bluetooth');
+          logger.info('BLE подключено успешно!');
+
+          // В реальности здесь нужно отправить Protobuf handshake
+          // Но так как у нас нет либы, мы просто показываем лог
+          logger.warn('ВНИМАНИЕ: Для реальной работы нужна библиотека meshtastic.js или protobuf.js для декодирования.');
+
+        } catch (e) {
+          logger.error('BLE Error: ' + e);
+          showToast('Ошибка подключения BLE', 'error');
+        }
+      }
+
+      handleBleData(event) {
+        const value = event.target.value;
+        const data = new Uint8Array(value.buffer);
+        logger.debug(`Получено байт (BLE): ${data.length}`);
+        // Здесь должен быть Protobuf Decoder.
+        // Пока мы не можем декодировать без библиотеки, но структура готова.
+      }
+
+      // --- SERIAL IMPLEMENTATION ---
+      async connectSerial() {
+        if (!navigator.serial) return showToast('Browser not supported', 'error');
+        try {
+          const port = await navigator.serial.requestPort();
+          await port.open({ baudRate: 115200 });
+          this.updateStatus(true, 'Serial/USB');
+
+          // Чтение стрима...
+          const reader = port.readable.getReader();
+          this.serialLoop(reader);
+        } catch (e) {
+          logger.error(e);
+        }
+      }
+
+      async serialLoop(reader) {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          // Тут данные приходят кусками, нужен буфер сборки пакетов
+          logger.debug(`Serial data: ${value.length} bytes`);
+        }
+      }
+
+      // --- COMMON SEND ---
+      async sendPacket(text) {
+        if (this.isSim) {
+          logger.info(`[SIM] Отправка в эфир: "${text}"`);
+          return;
+        }
+
+        if (this.mode === 'ble' && this.toRadioChar) {
+          // Здесь нужно кодировать Protobuf
+          // const encoded = MeshProto.encode({ ... }); 
+          // await this.toRadioChar.writeValue(encoded);
+          logger.warn('Отправка на реальное устройство требует Protobuf encoder');
+        }
+      }
+
+      updateStatus(connected, text) {
+        app.isConnected = connected;
+        const badge = document.getElementById('globalStatus');
+        const txt = document.getElementById('statusText');
+
+        if (connected) {
+          badge.className = 'status-badge connected';
+          txt.textContent = text || 'Подключено';
+        } else {
+          badge.className = 'status-badge disconnected';
+          txt.textContent = 'Отключено';
+        }
+      }
+
+      handleDisconnect() {
+        this.updateStatus(false);
+        showToast('Устройство отключено', 'warning');
+      }
+
+      renderNodes() {
+        const container = document.getElementById('node-list-container');
+        container.innerHTML = '';
+        app.nodes.forEach((node, id) => {
+          const el = document.createElement('div');
+          el.className = 'node-card';
+          el.innerHTML = `
+            <div class="node-header">${node.user.longName || id}</div>
+            <div class="node-stat"><span>ID:</span> <span class="node-val">${id}</span></div>
+            <div class="node-stat"><span>SNR:</span> <span class="node-val">${node.snr || '?'} dB</span></div>
+            <div class="node-stat"><span>Last seen:</span> <span class="node-val">${new Date(node.lastHeard).toLocaleTimeString()}</span></div>
+          `;
+          container.appendChild(el);
+        });
+      }
+    }
+
+    // Инициализация
+    const connManager = new ConnectionManager();
+
+    // Привязка кнопок
+    document.getElementById('btn-ble-scan').onclick = () => connManager.connectBLE();
+    document.getElementById('btn-serial-connect').onclick = () => connManager.connectSerial();
+
+    // Автозапуск на вкладку "Connection"
+    router.navigate('connection');
+
+  </script>
 </body>
+
 </html>
