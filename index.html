@@ -5,11 +5,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meshtastic Control Panel - Professional Edition</title>
-
-  <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.4/dist/protobuf.min.js"></script>
+  <script src="protobuf.min.js"></script>
+  <script src="meshtastic_pb.js"></script>
 
   <style>
-    /* ... (CSS код не изменен) ... */
     :root {
       --color-bg-primary: #0a0e1a;
       --color-bg-secondary: #131829;
@@ -614,43 +613,44 @@
     </header>
 
     <div class="tabs">
-      <button class="tab-button active" data-tab="connection" onclick="switchTab('connection')">🔌 Connection</button>
-      <button class="tab-button" data-tab="dashboard" onclick="switchTab('dashboard')" disabled>📊 Dashboard</button>
-      <button class="tab-button" data-tab="lora" onclick="switchTab('lora')" disabled>📡 LoRa Config</button>
-      <button class="tab-button" data-tab="messages" onclick="switchTab('messages')" disabled>💬 Messages</button>
-      <button class="tab-button" data-tab="nodes" onclick="switchTab('nodes')" disabled>🌐 Nodes</button>
-      <button class="tab-button" data-tab="admin" onclick="switchTab('admin')" disabled>⚙️ Admin</button>
-      <button class="tab-button" data-tab="logs" onclick="switchTab('logs')">📝 Logs</button>
+      <button class="tab-button active" data-tab="connection">🔌 Connection</button>
+      <button class="tab-button" data-tab="dashboard">📊 Dashboard</button>
+      <button class="tab-button" data-tab="lora">📡 LoRa Config</button>
+      <button class="tab-button" data-tab="messages">💬 Messages</button>
+      <button class="tab-button" data-tab="nodes">🌐 Nodes</button>
+      <button class="tab-button" data-tab="admin">⚙️ Admin</button>
+      <button class="tab-button" data-tab="logs">📝 Logs</button>
     </div>
 
     <div class="tab-content active" id="connection">
       <div class="help-box">
-        <h3>📖 Quick Start Guide</h3>
+        <h3>📖 Quick Start Guide for Heltec V4</h3>
         <ol>
-          <li>Open in **Chrome/Edge** over **HTTPS/localhost** for WebBLE/WebSerial.</li>
-          <li>For Serial, ensure the device is in the **Native/Protobuf** mode.</li>
-          <li>After connecting, check the **Logs** tab for `My Node ID` data to confirm Protobuf decoding is working.
-          </li>
+          <li>Ensure Bluetooth is enabled on your Heltec V4 device</li>
+          <li>Open this page in Chrome or Edge browser (required for Web Bluetooth)</li>
+          <li>Click the "BLE (Bluetooth)" tab below</li>
+          <li>Click "Scan for Devices" button</li>
+          <li>Select your Heltec V4 from the list</li>
+          <li>Wait for configuration sync (monitor in Logs tab)</li>
+          <li>Navigate to Dashboard to view device information</li>
         </ol>
       </div>
 
       <div class="tabs">
-        <button class="tab-button active" data-tab="ble-tab" onclick="switchConnTab('ble-tab')">📱 BLE
-          (Bluetooth)</button>
-        <button class="tab-button" data-tab="serial-tab" onclick="switchConnTab('serial-tab')">🔌 Serial/USB</button>
-        <button class="tab-button" data-tab="tcp-tab" onclick="switchConnTab('tcp-tab')">🌐 TCP/Network</button>
+        <button class="tab-button active" data-tab="ble-tab">📱 BLE (Bluetooth)</button>
+        <button class="tab-button" data-tab="serial-tab">🔌 Serial/USB</button>
+        <button class="tab-button" data-tab="tcp-tab">🌐 TCP/Network</button>
       </div>
 
       <div class="tab-content active" id="ble-tab" style="margin-top: 20px;">
         <div class="section">
           <h2 class="section-title">Bluetooth Low Energy Connection</h2>
           <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Recommended for wireless devices.
+            Recommended for Heltec V4 and other wireless Meshtastic devices. Requires Chrome or Edge browser.
           </p>
           <div class="button-group">
-            <button id="bleConnectBtn" onclick="bleConnection.connect()">🔍 Scan and Connect</button>
-            <button id="bleDisconnectBtn" class="secondary" onclick="bleConnection.disconnect()"
-              disabled>Disconnect</button>
+            <button id="bleScanBtn">🔍 Scan for Devices</button>
+            <button id="bleDisconnectBtn" class="secondary" disabled>Disconnect</button>
           </div>
           <div id="bleDeviceList" class="device-list"></div>
         </div>
@@ -660,12 +660,11 @@
         <div class="section">
           <h2 class="section-title">Serial/USB Connection</h2>
           <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Direct USB connection. **Protobuf stream decoding is now correctly implemented.**
+            Direct USB connection. Requires Chrome or Edge browser and device in PROTO mode.
           </p>
           <div class="button-group">
-            <button id="serialConnectBtn" onclick="serialConnection.connect()">🔌 Connect Serial Port</button>
-            <button id="serialDisconnectBtn" class="secondary" onclick="serialConnection.disconnect()"
-              disabled>Disconnect</button>
+            <button id="serialConnectBtn">🔌 Connect Serial Port</button>
+            <button id="serialDisconnectBtn" class="secondary" disabled>Disconnect</button>
           </div>
         </div>
       </div>
@@ -674,16 +673,15 @@
         <div class="section">
           <h2 class="section-title">TCP/Network Connection</h2>
           <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Connect to HTTP interface (e.g., using Meshtastic Web Server).
+            Connect to devices with WiFi/Ethernet. Requires network access to device.
           </p>
           <div class="form-group">
-            <label>Address IP and Port (e.g., 192.168.42.1:80)</label>
-            <input type="text" id="tcpAddress" placeholder="192.168.42.1:80" value="192.168.42.1:80">
+            <label>Device IP Address and Port</label>
+            <input type="text" id="tcpAddress" placeholder="192.168.1.100:4403" value="192.168.1.1:4403">
           </div>
           <div class="button-group">
-            <button id="tcpConnectBtn" onclick="tcpConnection.connect()">🌐 Connect TCP</button>
-            <button id="tcpDisconnectBtn" class="secondary" onclick="tcpConnection.disconnect()"
-              disabled>Disconnect</button>
+            <button id="tcpConnectBtn">🌐 Connect TCP</button>
+            <button id="tcpDisconnectBtn" class="secondary" disabled>Disconnect</button>
           </div>
         </div>
       </div>
@@ -855,7 +853,7 @@
       <div class="section">
         <h2 class="section-title">System Logs</h2>
         <div class="button-group" style="margin-bottom: 15px;">
-          <button class="secondary" id="clearLogsBtn" onclick="logger.clear()">🗑️ Clear Logs</button>
+          <button class="secondary" id="clearLogsBtn">🗑️ Clear Logs</button>
           <button class="secondary" id="exportLogsBtn">📥 Export Logs</button>
           <select id="logLevelFilter" style="width: auto;">
             <option value="ALL">All Levels</option>
