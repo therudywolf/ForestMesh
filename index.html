@@ -5,9 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Meshtastic Control Panel - Professional Edition</title>
-
   <style>
-    /* ... (Все ваши стили остаются здесь без изменений) ... */
     :root {
       --color-bg-primary: #0a0e1a;
       --color-bg-secondary: #131829;
@@ -37,846 +35,414 @@
       overflow-x: hidden;
     }
 
-    .app-container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 20px;
     }
 
     header {
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 20px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--color-border);
       margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 15px;
     }
 
-    h1 {
-      font-size: 24px;
-      font-weight: 600;
+    .section {
+      background: var(--color-bg-secondary);
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .section-title {
       color: var(--color-accent);
+      border-bottom: 1px solid var(--color-border-light);
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+      font-size: 1.4em;
     }
 
-    .status-badge {
-      display: inline-flex;
+    .status-grid,
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      font-size: 0.95em;
+    }
+
+    .status-grid {
+      grid-template-columns: 1fr 1fr auto;
+    }
+
+    .status-grid>div {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
-      font-weight: 500;
+      gap: 10px;
     }
 
-    .status-badge.disconnected {
-      background: rgba(239, 68, 68, 0.2);
-      color: var(--color-error);
-    }
-
-    .status-badge.connecting {
-      background: rgba(251, 191, 36, 0.2);
-      color: var(--color-warning);
-    }
-
-    .status-badge.connected {
-      background: rgba(74, 222, 128, 0.2);
+    .status-connected {
       color: var(--color-success);
+      font-weight: bold;
     }
 
-    .status-indicator {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: currentColor;
-      animation: pulse 2s ease-in-out infinite;
+    .status-disconnected {
+      color: var(--color-error);
+      font-weight: bold;
     }
 
-    @keyframes pulse {
-
-      0%,
-      100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.5;
-      }
+    button {
+      background: var(--color-accent);
+      color: var(--color-bg-primary);
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+      font-weight: bold;
     }
 
-    .tabs {
+    button:hover:not(:disabled) {
+      background: var(--color-accent-hover);
+    }
+
+    button:disabled {
+      background: var(--color-border);
+      color: var(--color-text-secondary);
+      cursor: not-allowed;
+    }
+
+    .button-group {
       display: flex;
       gap: 10px;
+    }
+
+    .danger {
+      background: var(--color-error);
+    }
+
+    .danger:hover:not(:disabled) {
+      background: #c23939;
+    }
+
+    .secondary {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border-light);
+    }
+
+    .primary {
+      background: var(--color-success);
+      color: var(--color-bg-primary);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid var(--color-border);
       margin-bottom: 20px;
-      overflow-x: auto;
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 10px;
+      gap: 10px;
     }
 
     .tab-button {
-      padding: 10px 20px;
-      background: transparent;
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
+      background: none;
+      border: none;
       color: var(--color-text-secondary);
+      padding: 10px 15px;
       cursor: pointer;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.2s;
-      white-space: nowrap;
-    }
-
-    .tab-button:hover {
-      background: var(--color-bg-tertiary);
-      color: var(--color-text-primary);
+      transition: color 0.2s;
     }
 
     .tab-button.active {
-      background: var(--color-accent);
-      color: var(--color-bg-primary);
-      border-color: var(--color-accent);
+      color: var(--color-accent);
+      border-bottom: 2px solid var(--color-accent);
     }
 
     .tab-content {
       display: none;
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      padding: 20px;
     }
 
     .tab-content.active {
       display: block;
     }
 
-    .section {
-      margin-bottom: 20px;
-    }
-
-    .section-title {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: var(--color-accent);
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 14px;
-      font-weight: 500;
-      color: var(--color-text-secondary);
-    }
-
-    input[type="text"],
-    input[type="number"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 10px 12px;
+    /* Chat Window */
+    .chat-window {
+      height: 300px;
       background: var(--color-bg-tertiary);
       border: 1px solid var(--color-border);
+      padding: 10px;
+      overflow-y: scroll;
+      margin-bottom: 15px;
+      border-radius: 8px;
+    }
+
+    .chat-message {
+      margin-bottom: 8px;
+      padding: 5px 10px;
       border-radius: 6px;
-      color: var(--color-text-primary);
-      font-size: 14px;
-      transition: border-color 0.2s;
+      font-size: 0.9em;
     }
 
-    input:focus,
-    select:focus,
-    textarea:focus {
-      outline: none;
-      border-color: var(--color-accent);
+    .incoming {
+      background: #2a334d;
+      margin-right: 20%;
     }
 
-    button {
-      padding: 10px 20px;
-      background: var(--color-accent);
-      border: none;
-      border-radius: 6px;
-      color: var(--color-bg-primary);
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
+    .outgoing {
+      background: #4d2a33;
+      margin-left: 20%;
+      text-align: right;
     }
 
-    button:hover {
-      background: var(--color-accent-hover);
-      transform: translateY(-1px);
-    }
-
-    button:active {
-      transform: translateY(0);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    button.secondary {
-      background: var(--color-bg-tertiary);
-      color: var(--color-text-primary);
-      border: 1px solid var(--color-border);
-    }
-
-    button.danger {
-      background: var(--color-error);
-      color: white;
-    }
-
-    .button-group {
+    .send-message-form {
       display: flex;
       gap: 10px;
-      flex-wrap: wrap;
     }
 
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .info-card {
-      background: var(--color-bg-tertiary);
+    .send-message-form input {
+      flex-grow: 1;
+      padding: 10px;
       border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 15px;
-    }
-
-    .info-label {
-      font-size: 12px;
-      color: var(--color-text-secondary);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 5px;
-    }
-
-    .info-value {
-      font-size: 18px;
-      font-weight: 600;
+      background: var(--color-bg-tertiary);
       color: var(--color-text-primary);
+      border-radius: 6px;
     }
 
+    /* Log console */
     .log-console {
-      background: var(--color-bg-primary);
+      background: var(--color-bg-tertiary);
       border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 15px;
-      max-height: 500px;
-      overflow-y: auto;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
+      padding: 10px;
+      height: 300px;
+      overflow-y: scroll;
+      font-family: monospace;
+      font-size: 0.85em;
+      border-radius: 8px;
     }
 
-    .log-entry {
-      padding: 5px 0;
-      border-bottom: 1px solid var(--color-border);
-      display: flex;
-      gap: 10px;
+    .log-item {
+      padding: 2px 0;
+      border-bottom: 1px dotted var(--color-border);
     }
 
-    .log-entry:last-child {
+    .log-item:last-child {
       border-bottom: none;
     }
 
-    .log-time {
-      color: var(--color-text-secondary);
-      min-width: 90px;
+    .log-debug {
+      color: #888;
     }
 
-    .log-level {
-      min-width: 60px;
-      font-weight: 600;
+    .log-info {
+      color: var(--color-text-primary);
     }
 
-    .log-level.DEBUG {
-      color: var(--color-text-secondary);
-    }
-
-    .log-level.INFO {
-      color: var(--color-accent);
-    }
-
-    .log-level.WARN {
+    .log-warn {
       color: var(--color-warning);
     }
 
-    .log-level.ERROR {
+    .log-error {
       color: var(--color-error);
+      font-weight: bold;
     }
 
-    .log-message {
-      flex: 1;
-      word-break: break-word;
+    .log-level {
+      font-weight: bold;
+      margin-right: 5px;
     }
 
-    .device-list {
+    /* Toast notification styles */
+    .toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
       display: flex;
-      flex-direction: column;
+      flex-direction: column-reverse;
       gap: 10px;
-      margin-top: 15px;
     }
 
-    .device-item {
-      background: var(--color-bg-tertiary);
-      border: 1px solid var(--color-border);
+    .toast {
+      padding: 10px 15px;
       border-radius: 6px;
-      padding: 15px;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      color: #fff;
+      font-weight: bold;
+      transition: opacity 0.5s ease-out;
+      opacity: 1;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
     }
 
-    .device-item:hover {
-      border-color: var(--color-accent);
-      background: rgba(103, 197, 230, 0.1);
+    .toast.fade-out {
+      opacity: 0;
     }
 
-    .device-info {
-      flex: 1;
-    }
-
-    .device-name {
-      font-weight: 600;
-      font-size: 16px;
-      margin-bottom: 5px;
-    }
-
-    .device-details {
-      font-size: 12px;
-      color: var(--color-text-secondary);
-    }
-
-    .rssi-indicator {
-      padding: 5px 10px;
-      background: rgba(103, 197, 230, 0.2);
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-    }
-
-    .slider-container {
-      margin: 15px 0;
-    }
-
-    input[type="range"] {
-      width: 100%;
-      height: 6px;
-      background: var(--color-bg-tertiary);
-      border-radius: 3px;
-      outline: none;
-      -webkit-appearance: none;
-    }
-
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px;
-      height: 18px;
+    .toast-info {
       background: var(--color-accent);
-      border-radius: 50%;
-      cursor: pointer;
     }
 
-    input[type="range"]::-moz-range-thumb {
-      width: 18px;
-      height: 18px;
-      background: var(--color-accent);
-      border-radius: 50%;
-      cursor: pointer;
-      border: none;
+    .toast-success {
+      background: var(--color-success);
     }
 
-    .message-list {
-      max-height: 400px;
-      overflow-y: auto;
-      background: var(--color-bg-primary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 15px;
+    .toast-warning {
+      background: var(--color-warning);
     }
 
-    .message-item {
-      background: var(--color-bg-tertiary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      padding: 12px;
-      margin-bottom: 10px;
+    .toast-error {
+      background: var(--color-error);
     }
 
-    .message-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      font-size: 12px;
-      color: var(--color-text-secondary);
-    }
-
-    .message-body {
-      color: var(--color-text-primary);
-      word-break: break-word;
-    }
-
-    .node-table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--color-bg-tertiary);
-      border-radius: 6px;
-      overflow: hidden;
-    }
-
-    .node-table th,
-    .node-table td {
-      padding: 12px;
-      text-align: left;
-      border-bottom: 1px solid var(--color-border);
-    }
-
-    .node-table th {
-      background: var(--color-bg-primary);
-      font-weight: 600;
-      color: var(--color-accent);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .node-table tbody tr:hover {
-      background: rgba(103, 197, 230, 0.1);
-    }
-
+    /* Modal styles */
     .modal {
-      display: none;
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      align-items: center;
+      background-color: rgba(0, 0, 0, 0.8);
+      display: none;
+      /* Скрыто по умолчанию */
       justify-content: center;
-    }
-
-    .modal.active {
-      display: flex;
+      align-items: center;
+      z-index: 1001;
     }
 
     .modal-content {
       background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
       padding: 30px;
-      max-width: 500px;
-      width: 90%;
+      border-radius: 10px;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     }
 
     .modal-title {
-      font-size: 20px;
-      font-weight: 600;
+      color: var(--color-warning);
       margin-bottom: 15px;
-      color: var(--color-accent);
     }
 
-    .modal-buttons {
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-      margin-top: 20px;
+    .modal-message {
+      margin-bottom: 25px;
+      color: var(--color-text-secondary);
     }
 
-    .toast {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 15px 20px;
-      background: var(--color-bg-secondary);
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-      z-index: 2000;
-      min-width: 300px;
-      animation: slideIn 0.3s ease-out;
-    }
-
-    @keyframes slideIn {
-      from {
-        transform: translateX(400px);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-
-    .toast.success {
-      border-left: 4px solid var(--color-success);
-    }
-
-    .toast.error {
-      border-left: 4px solid var(--color-error);
-    }
-
-    .toast.warning {
-      border-left: 4px solid var(--color-warning);
-    }
-
-    .toast.info {
-      border-left: 4px solid var(--color-accent);
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(103, 197, 230, 0.3);
-      border-top-color: var(--color-accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .help-box {
-      background: rgba(103, 197, 230, 0.1);
-      border: 1px solid var(--color-accent);
-      border-radius: 6px;
-      padding: 15px;
-      margin-bottom: 20px;
-    }
-
-    .help-box h3 {
-      color: var(--color-accent);
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-
-    .help-box ol {
-      margin-left: 20px;
-    }
-
-    .help-box li {
-      margin: 5px 0;
-      font-size: 14px;
-    }
-
-    @media (max-width: 768px) {
-      .app-container {
-        padding: 10px;
-      }
-
-      .info-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .tabs {
-        flex-wrap: wrap;
-      }
-
-      .tab-button {
-        flex: 1;
-        min-width: 100px;
-      }
+    .modal-buttons button {
+      margin: 0 5px;
     }
   </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.5/dist/protobuf.min.js"></script>
 </head>
 
 <body>
-  <div class="app-container">
+  <div class="container">
     <header>
-      <h1>🛰️ Meshtastic Control Panel</h1>
-      <div class="status-badge disconnected" id="connectionStatus">
-        <span class="status-indicator"></span>
-        <span id="statusText">Disconnected</span>
-      </div>
+      <h1>Meshtastic Control Panel</h1>
     </header>
 
-    <div class="tabs">
-      <button class="tab-button active" data-tab="connection">🔌 Connection</button>
-      <button class="tab-button" data-tab="dashboard">📊 Dashboard</button>
-      <button class="tab-button" data-tab="lora">📡 LoRa Config</button>
-      <button class="tab-button" data-tab="messages">💬 Messages</button>
-      <button class="tab-button" data-tab="nodes">🌐 Nodes</button>
-      <button class="tab-button" data-tab="admin">⚙️ Admin</button>
-      <button class="tab-button" data-tab="logs">📝 Logs</button>
+    <div class="section connection-status">
+      <h2 class="section-title">Connection Status</h2>
+      <div class="status-grid">
+        <div>
+          <strong>Status:</strong> <span id="connectionStatus" class="status-disconnected">DISCONNECTED</span>
+        </div>
+        <div>
+          <strong>Type:</strong> <span id="connectionType">N/A</span>
+        </div>
+        <div class="button-group connection-buttons">
+          <button id="usbConnectBtn">🔗 Connect USB (Serial)</button> <button id="disconnectBtn" class="danger"
+            disabled>🛑 Disconnect</button>
+        </div>
+      </div>
     </div>
 
-    <div class="tab-content active" id="connection">
-      <div class="help-box">
-        <h3>📖 Quick Start Guide for Heltec V4</h3>
-        <ol>
-          <li>Убедитесь, что ваше устройство Meshtastic включено.</li>
-          <li>Откройте эту страницу в браузере **Chrome** или **Edge**.</li>
-          <li>Для BLE (Bluetooth): нажмите "Scan for Devices" и выберите устройство.</li>
-          <li>Для Serial/USB: подключите устройство по USB и нажмите "Connect Serial Port".</li>
-        </ol>
-      </div>
+    <div class="tabs" id="tabs">
+      <button class="tab-button active" data-tab="info">Node Info</button>
+      <button class="tab-button" data-tab="messages">Messages</button>
+      <button class="tab-button" data-tab="config">Configuration</button>
+      <button class="tab-button" data-tab="logs">Logs</button>
+    </div>
 
-      <div class="tabs">
-        <button class="tab-button active" data-tab="ble-tab">📱 BLE (Bluetooth)</button>
-        <button class="tab-button" data-tab="serial-tab">🔌 Serial/USB</button>
-        <button class="tab-button" data-tab="tcp-tab">🌐 TCP/Network</button>
-      </div>
+    <div class="tab-container">
 
-      <div class="tab-content active" id="ble-tab" style="margin-top: 20px;">
+      <div class="tab-content active" id="info">
         <div class="section">
-          <h2 class="section-title">Bluetooth Low Energy Connection</h2>
-          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Recommended for wireless Meshtastic devices. Requires Chrome or Edge browser.
-          </p>
-          <div class="button-group">
-            <button id="bleScanBtn">🔍 Scan for Devices</button>
-            <button id="bleDisconnectBtn" class="secondary" disabled>Disconnect</button>
+          <h2 class="section-title">Device Information</h2>
+          <div class="info-grid">
+            <div><strong>Node ID:</strong> <span id="nodeId">N/A</span></div>
+            <div><strong>Firmware:</strong> <span id="firmwareVersion">N/A</span></div>
+            <div><strong>Model:</strong> <span id="hwModel">N/A</span></div>
+            <div><strong>Region:</strong> <span id="region">N/A</span></div>
+            <div><strong>TX Power:</strong> <span id="txPower">N/A</span></div>
+            <div><strong>SF:</strong> <span id="spreadFactor">N/A</span></div>
+            <div><strong>Bandwidth:</strong> <span id="bandwidth">N/A</span></div>
+            <div><strong>Frequency:</strong> <span id="frequency">N/A</span></div>
           </div>
-          <div id="bleDeviceList" class="device-list"></div>
         </div>
       </div>
 
-      <div class="tab-content" id="serial-tab" style="margin-top: 20px;">
+      <div class="tab-content" id="messages">
         <div class="section">
-          <h2 class="section-title">Serial/USB Connection</h2>
-          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Direct USB connection. Requires Chrome or Edge browser and device in PROTO mode.
-          </p>
-          <div class="button-group">
-            <button id="serialConnectBtn">🔌 Connect Serial Port</button>
-            <button id="serialDisconnectBtn" class="secondary" disabled>Disconnect</button>
+          <h2 class="section-title">Chat & Messages</h2>
+          <div class="chat-window" id="chatWindow">
+          </div>
+          <div class="send-message-form">
+            <input type="text" id="messageInput" placeholder="Type your message...">
+            <button id="sendMessageBtn">Send</button>
           </div>
         </div>
       </div>
 
-      <div class="tab-content" id="tcp-tab" style="margin-top: 20px;">
+      <div class="tab-content" id="config">
         <div class="section">
-          <h2 class="section-title">TCP/Network Connection</h2>
-          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
-            Connect to devices with WiFi/Ethernet. Requires network access to device.
-          </p>
-          <div class="form-group">
-            <label>Device IP Address and Port</label>
-            <input type="text" id="tcpAddress" placeholder="192.168.1.100:4403" value="192.168.1.1:4403">
-          </div>
+          <h2 class="section-title">Raw Decoded Config</h2>
+          <p>Полностью декодированный Protobuf-конфиг будет отображаться здесь:</p>
+          <pre id="rawConfigDisplay"
+            style="white-space: pre-wrap; word-wrap: break-word; background: var(--color-bg-tertiary); padding: 10px; border-radius: 6px; max-height: 400px; overflow-y: auto;">Ожидание данных...</pre>
           <div class="button-group">
-            <button id="tcpConnectBtn">🌐 Connect TCP</button>
-            <button id="tcpDisconnectBtn" class="secondary" disabled>Disconnect</button>
+            <button class="primary" id="saveConfigBtn">💾 Save Configuration</button>
+            <button class="secondary" id="rebootDeviceBtn">🔄 Reboot Device</button>
+            <button class="secondary" id="exportConfigBtn">📥 Export Configuration</button>
+            <button class="danger" id="factoryResetBtn">⚠️ Factory Reset</button>
           </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="logs">
+        <div class="section">
+          <h2 class="section-title">System Logs</h2>
+          <div class="button-group" style="margin-bottom: 15px;">
+            <button class="secondary" id="clearLogsBtn">🗑️ Clear Logs</button>
+            <button class="secondary" id="exportLogsBtn">📥 Export Logs</button>
+            <select id="logLevelFilter" style="width: auto;">
+              <option value="ALL">All Levels</option>
+              <option value="DEBUG">DEBUG</option>
+              <option value="INFO">INFO</option>
+              <option value="WARN">WARN</option>
+              <option value="ERROR">ERROR</option>
+            </select>
+          </div>
+          <div class="log-console" id="logConsole"></div>
         </div>
       </div>
     </div>
 
-    <div class="tab-content" id="dashboard">
-      <div class="section">
-        <h2 class="section-title">Device Information</h2>
-        <div class="info-grid" id="deviceInfo">
-          <div class="info-card">
-            <div class="info-label">Node ID</div>
-            <div class="info-value" id="nodeId">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Hardware Model</div>
-            <div class="info-value" id="hwModel">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Firmware Version</div>
-            <div class="info-value" id="fwVersion">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Battery Level</div>
-            <div class="info-value" id="battery">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Region</div>
-            <div class="info-value" id="region">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Channel Name</div>
-            <div class="info-value" id="channelName">-</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Known Nodes</div>
-            <div class="info-value" id="nodeCount">0</div>
-          </div>
-          <div class="info-card">
-            <div class="info-label">Uptime</div>
-            <div class="info-value" id="uptime">-</div>
-          </div>
+    <div class="modal" id="confirmModal">
+      <div class="modal-content">
+        <h2 class="modal-title" id="modalTitle">Confirm Action</h2>
+        <p id="modalMessage">Are you sure?</p>
+        <div class="modal-buttons">
+          <button class="secondary" id="modalCancelBtn">Cancel</button>
+          <button id="modalConfirmBtn">Confirm</button>
         </div>
       </div>
     </div>
 
-    <div class="tab-content" id="lora">
-      <div class="section">
-        <h2 class="section-title">LoRa Configuration</h2>
-        <div class="form-group">
-          <label>TX Power: <span id="txPowerValue">20</span> dBm</label>
-          <div class="slider-container">
-            <input type="range" id="txPower" min="0" max="30" value="20">
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Spreading Factor</label>
-          <select id="spreadingFactor">
-            <option value="7">SF7 (Fastest, shortest range)</option>
-            <option value="8">SF8</option>
-            <option value="9">SF9</option>
-            <option value="10" selected>SF10</option>
-            <option value="11">SF11</option>
-            <option value="12">SF12 (Slowest, longest range)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Bandwidth</label>
-          <select id="bandwidth">
-            <option value="62.5">62.5 kHz</option>
-            <option value="125">125 kHz</option>
-            <option value="250" selected>250 kHz</option>
-            <option value="500">500 kHz</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Coding Rate</label>
-          <select id="codingRate">
-            <option value="5" selected>4/5</option>
-            <option value="6">4/6</option>
-            <option value="7">4/7</option>
-            <option value="8">4/8</option>
-          </select>
-        </div>
-        <div class="button-group">
-          <button id="applyLoraBtn">✅ Apply Configuration</button>
-          <button class="secondary" id="revertLoraBtn">↶ Revert Changes</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="messages">
-      <div class="section">
-        <h2 class="section-title">Send Message</h2>
-        <div class="form-group">
-          <label>Recipient</label>
-          <select id="messageRecipient">
-            <option value="broadcast">📢 Broadcast (All Nodes)</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Message</label>
-          <textarea id="messageText" rows="3" placeholder="Type your message here..."></textarea>
-        </div>
-        <div class="button-group">
-          <button id="sendMessageBtn">📤 Send Message</button>
-          <button class="secondary" id="clearMessagesBtn">🗑️ Clear History</button>
-        </div>
-      </div>
-      <div class="section">
-        <h2 class="section-title">Message History</h2>
-        <div class="message-list" id="messageList">
-          <p style="color: var(--color-text-secondary); text-align: center;">No messages yet</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="nodes">
-      <div class="section">
-        <h2 class="section-title">Mesh Network Nodes</h2>
-        <div style="overflow-x: auto;">
-          <table class="node-table" id="nodeTable">
-            <thead>
-              <tr>
-                <th>Node ID</th>
-                <th>Name</th>
-                <th>Last Heard</th>
-                <th>RSSI</th>
-                <th>SNR</th>
-                <th>Hops</th>
-              </tr>
-            </thead>
-            <tbody id="nodeTableBody">
-              <tr>
-                <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">No nodes discovered yet
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="admin">
-      <div class="section">
-        <h2 class="section-title">Device Administration</h2>
-        <div class="form-group">
-          <label>Device Long Name</label>
-          <input type="text" id="deviceLongName" placeholder="My Meshtastic Device" maxlength="40">
-        </div>
-        <div class="form-group">
-          <label>Device Short Name</label>
-          <input type="text" id="deviceShortName" placeholder="MESH" maxlength="4">
-        </div>
-        <div class="button-group">
-          <button id="updateDeviceNameBtn">💾 Update Device Name</button>
-        </div>
-      </div>
-      <div class="section">
-        <h2 class="section-title">Device Actions</h2>
-        <div class="button-group">
-          <button class="secondary" id="rebootDeviceBtn">🔄 Reboot Device</button>
-          <button class="secondary" id="exportConfigBtn">📥 Export Configuration</button>
-          <button class="danger" id="factoryResetBtn">⚠️ Factory Reset</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="tab-content" id="logs">
-      <div class="section">
-        <h2 class="section-title">System Logs</h2>
-        <div class="button-group" style="margin-bottom: 15px;">
-          <button class="secondary" id="clearLogsBtn">🗑️ Clear Logs</button>
-          <button class="secondary" id="exportLogsBtn">📥 Export Logs</button>
-          <select id="logLevelFilter" style="width: auto;">
-            <option value="ALL">All Levels</option>
-            <option value="DEBUG">DEBUG</option>
-            <option value="INFO">INFO</option>
-            <option value="WARN">WARN</option>
-            <option value="ERROR">ERROR</option>
-          </select>
-        </div>
-        <div class="log-console" id="logConsole"></div>
-      </div>
-    </div>
   </div>
 
-  <div class="modal" id="confirmModal">
-    <div class="modal-content">
-      <h2 class="modal-title" id="modalTitle">Confirm Action</h2>
-      <p id="modalMessage">Are you sure?</p>
-      <div class="modal-buttons">
-        <button class="secondary" id="modalCancelBtn">Cancel</button>
-        <button id="modalConfirmBtn">Confirm</button>
-      </div>
-    </div>
-  </div>
+  <div class="toast-container" id="toastContainer"></div>
 
-  <script src="protobuf.min.js"></script>
-  <script src="meshtastic_pb.js"></script>
   <script src="app.js"></script>
 </body>
 
