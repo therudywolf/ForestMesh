@@ -1,107 +1,372 @@
 // ============================================================================
-// BLE CONNECTION (FIXED)
+// 0. КОНСТАНТЫ И PROTOBUF CODEC
+// ============================================================================
+
+const BLE_SERVICE_UUID = '6ba1b218-102e-462f-a498-565df2d75a3d';
+const TORADIO_UUID = 'f75c76d2-129e-4dad-a1dd-7866124401e7';
+const FROMRADIO_UUID = '2c55e69e-4993-11ea-8797-2e728ce88125';
+const FROMNUM_UUID = '2ac8082e-4993-11ea-8797-2e728ce88125';
+
+const SERIAL_MAGIC_HEADER = new Uint8Array([0x94, 0xC3]);
+const MAX_PACKET_SIZE = 1024;
+
+const PROTO_SCHEMAS = {
+  // Минимальная схема Meshtastic, необходимая для декодирования MyInfo, NodeInfo и TextPacket
+  "nested": {
+    "meshtastic": {
+      "nested": {
+        "PortNum": { "values": { "UNKNOWN_APP": 0, "TEXT_MESSAGE_APP": 1, "POSITION_APP": 3, "NODEINFO_APP": 4 } },
+        "MeshPacket": {
+          "fields": {
+            "from": { "type": "fixed32", "id": 1 },
+            "to": { "type": "fixed32", "id": 2 },
+            "decoded": { "type": "Data", "id": 4 },
+            "id": { "type": "fixed32", "id": 6 },
+            "rxTime": { "type": "fixed32", "id": 7 }
+          }
+        },
+        "Data": {
+          "fields": {
+            "portnum": { "type": "PortNum", "id": 1 },
+            "payload": { "type": "bytes", "id": 2 }
+          }
+        },
+        "FromRadio": { "fields": { "packet": { "type": "MeshPacket", "id": 11 }, "myInfo": { "type": "MyNodeInfo", "id": 3 }, "nodeInfo": { "type": "NodeInfo", "id": 4 } } },
+        "MyNodeInfo": { "fields": { "myNodeNum": { "type": "fixed32", "id": 1 }, "user": { "type": "User", "id": 2 } } },
+        "NodeInfo": { "fields": { "num": { "type": "fixed32", "id": 1 }, "user": { "type": "User", "id": 2 } } },
+        "User": { "fields": { "longName": { "type": "string", "id": 2 }, "shortName": { "type": "string", "id": 3 } } },
+        "ToRadio": { "fields": { "packet": { "type": "MeshPacket", "id": 1 }, "wantConfigId": { "type": "uint32", "id": 100 } } }
+      }
+    }
+  }
+};
+
+class ProtobufCodec {
+  constructor() {
+    this.root = null;
+    this.Types = {};
+    this.isInitialized = false;
+  }
+
+  async init() {
+    if (typeof protobuf === 'undefined') {
+      logger.error('Protobuf.js library not loaded. Check index.html!');
+      return false;
+    }
+    this.root = protobuf.Root.fromJSON(PROTO_SCHEMAS);
+    this.Types.FromRadio = this.root.lookupType("meshtastic.FromRadio");
+    this.Types.ToRadio = this.root.lookupType("meshtastic.ToRadio");
+    this.isInitialized = true;
+    logger.info('Protobuf Codec initialized successfully.');
+    return true;
+  }
+
+  decodeFromRadio(buffer) {
+    if (!this.isInitialized) return null;
+    try {
+      return this.Types.FromRadio.decode(buffer);
+    } catch (e) {
+      logger.error(`Protobuf ERROR (Failed to decode FromRadio): ${e.message}`);
+      return null;
+    }
+  }
+
+  encodeTextPacket(text, destination = 0xFFFFFFFF) {
+    if (!this.isInitialized) throw new Error("Protobuf not initialized.");
+    const payloadBytes = new TextEncoder().encode(text);
+    const packetId = Math.floor(Math.random() * 0xFFFFFFFF);
+
+    const packetStruct = {
+      to: destination,
+      decoded: {
+        portnum: 1, // TEXT_MESSAGE_APP
+        payload: payloadBytes
+      },
+      id: packetId
+    };
+
+    const toRadioStruct = { packet: packetStruct };
+    this.Types.ToRadio.verify(toRadioStruct);
+
+    return this.Types.ToRadio.encode(toRadioStruct).finish();
+  }
+
+  encodeHandshake() {
+    if (!this.isInitialized) throw new Error("Protobuf not initialized.");
+    // В Protobuf-структуре Meshtastic 2.x wantConfigId = 0
+    const handshakeStruct = { wantConfigId: 0 };
+    this.Types.ToRadio.verify(handshakeStruct);
+    return this.Types.ToRadio.encode(handshakeStruct).finish();
+  }
+}
+
+const protoCodec = new ProtobufCodec();
+
+// ============================================================================
+// 1. GLOBAL STATE AND HELPERS (UI, LOGGER, etc.)
+// ============================================================================
+
+const appState = {
+  isConnected: false,
+  connectionType: null,
+  deviceInfo: {
+    nodeId: null,
+    hwModel: '-',
+    fwVersion: '-',
+    battery: '-',
+    region: '-',
+    channelName: '-',
+    nodeCount: 0,
+    uptime: '-'
+  },
+  nodes: new Map()
+};
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-button[data-tab]').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+  document.querySelector(`.tab-button[data-tab="${tabId}"]`).classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+function switchConnTab(tabId) {
+    document.querySelectorAll('#connection .tabs .tab-button').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('#connection .tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelector(`#connection .tabs .tab-button[data-tab="${tabId}"]`).classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+}
+
+function updateUIConnection(status = 'Disconnected', type = 'disconnected') {
+  appState.isConnected = (type === 'connected');
+  const badge = document.getElementById('connectionStatus');
+  const text = document.getElementById('statusText');
+
+  badge.className = `status-badge ${type}`;
+  text.textContent = status;
+
+  document.getElementById('bleScanBtn').disabled = appState.isConnected;
+  document.getElementById('bleDisconnectBtn').disabled = !appState.isConnected || appState.connectionType !== 'ble';
+  document.getElementById('serialConnectBtn').disabled = appState.isConnected;
+  document.getElementById('serialDisconnectBtn').disabled = !appState.isConnected || appState.connectionType !== 'serial';
+  document.getElementById('tcpConnectBtn').disabled = appState.isConnected;
+  document.getElementById('tcpDisconnectBtn').disabled = !appState.isConnected || appState.connectionType !== 'tcp';
+  document.getElementById('sendMessageBtn').disabled = !appState.isConnected;
+
+  if (!appState.isConnected) {
+    updateUIInfo({ clear: true }); // Очистка информации при отключении
+  }
+}
+
+function updateUIInfo(options = {}) {
+    if (options.clear) {
+        document.getElementById('nodeId').textContent = '-';
+        document.getElementById('channelName').textContent = '-';
+        document.getElementById('nodeCount').textContent = '0';
+        // ... очистить все остальные поля по необходимости
+        appState.nodes.clear();
+        updateNodesTable();
+        return;
+    }
+    
+    document.getElementById('nodeId').textContent = appState.deviceInfo.nodeId || '-';
+    document.getElementById('channelName').textContent = appState.deviceInfo.channelName || '-';
+    document.getElementById('nodeCount').textContent = appState.nodes.size.toString();
+    
+    // Обновление NodeID в списке получателей
+    const recipientSelect = document.getElementById('messageRecipient');
+    const myIdHex = appState.deviceInfo.nodeId || 'N/A';
+    
+    // Удаляем старый My Node Option, если он есть
+    const existingOpt = recipientSelect.querySelector('option[value="myNode"]');
+    if(existingOpt) existingOpt.remove();
+    
+    // Добавляем My Node, если известен
+    if(appState.deviceInfo.nodeId) {
+        const option = document.createElement('option');
+        option.value = 'myNode';
+        option.textContent = `👤 My Node (${myIdHex})`;
+        recipientSelect.appendChild(option);
+    }
+}
+
+function updateNodesTable() {
+    const tbody = document.getElementById('nodeTableBody');
+    tbody.innerHTML = '';
+
+    if (appState.nodes.size === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--color-text-secondary);">Узлы пока не обнаружены</td></tr>';
+        return;
+    }
+
+    appState.nodes.forEach(node => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+            <td>!${node.id.toString(16).toUpperCase().padStart(8, '0')}</td>
+            <td>${node.longName || 'Unknown'}</td>
+            <td>${node.lastSeen ? new Date(node.lastSeen).toLocaleTimeString() : '-'}</td>
+            <td>${node.rssi || '-'}</td>
+            <td>${node.snr || '-'}</td>
+            <td>${node.numHops || '-'}</td>
+        `;
+    });
+}
+
+const logger = {
+  el: document.getElementById('logConsole'),
+  log(level, ...args) {
+    const msg = args.join(' ');
+    if (!this.el) return;
+    const time = new Date().toLocaleTimeString('ru-RU');
+    const line = document.createElement('div');
+    line.className = 'log-entry';
+    line.innerHTML = `
+      <span class="log-time">[${time}]</span>
+      <span class="log-level ${level}">${level}</span>
+      <span class="log-message">${msg}</span>
+    `;
+    this.el.appendChild(line);
+    this.el.scrollTop = this.el.scrollHeight;
+  },
+  debug(...m) { this.log('DEBUG', ...m); },
+  info(...m) { this.log('INFO', ...m); },
+  warn(...m) { this.log('WARN', ...m); },
+  error(...m) { this.log('ERROR', ...m); },
+  clear() { this.el.innerHTML = ''; }
+};
+
+function showToast(message, type = 'info') {
+    // Простая заглушка для тостов
+    logger.info(`TOAST (${type}): ${message}`);
+}
+
+async function sendMessageHandler() {
+    const text = document.getElementById('messageText').value.trim();
+    if (!text || !appState.isConnected) return;
+    
+    const recipient = document.getElementById('messageRecipient').value;
+    
+    let destination = 0xFFFFFFFF; // Broadcast
+    if (recipient !== 'broadcast' && recipient !== 'myNode') {
+        // TODO: Реализовать выбор конкретного узла
+    }
+
+    try {
+        if (appState.connectionType === 'ble') {
+            await bleConnection.sendMessage(text, destination);
+        } else if (appState.connectionType === 'serial') {
+            await serialConnection.sendMessage(text);
+        } else if (appState.connectionType === 'tcp') {
+            await tcpConnection.sendMessage(text);
+        }
+        document.getElementById('messageText').value = '';
+    } catch (e) {
+        logger.error(`Failed to send message: ${e.message}`);
+        showToast('Failed to send message', 'error');
+    }
+}
+
+// ============================================================================
+// 2. UNIFIED PACKET PROCESSING
+// ============================================================================
+
+function processMeshPacket(data) {
+    const decoded = protoCodec.decodeFromRadio(data);
+    if (!decoded) return;
+
+    logger.debug(`Protobuf decoded: ${JSON.stringify(decoded)}`);
+
+    // 1. My Node Info
+    if (decoded.myInfo) {
+        appState.deviceInfo.nodeId = decoded.myInfo.myNodeNum;
+        appState.deviceInfo.channelName = decoded.myInfo.user?.longName || 'Unknown';
+        updateUIInfo();
+        logger.success(`My Node ID: ${appState.deviceInfo.nodeId.toString(16).toUpperCase()}`);
+    }
+
+    // 2. Node Info
+    if (decoded.nodeInfo) {
+        const num = decoded.nodeInfo.num;
+        const longName = decoded.nodeInfo.user?.longName || `Node ${num.toString(16)}`;
+        appState.nodes.set(num, { 
+            id: num, 
+            longName: longName, 
+            lastSeen: Date.now() 
+        });
+        updateUIInfo();
+        updateNodesTable();
+    }
+
+    // 3. Data Packet (e.g., Text Message)
+    if (decoded.packet) {
+        const packet = decoded.packet;
+        
+        // PortNum 1 = TEXT_MESSAGE_APP
+        if (packet.decoded?.portnum === 1 && packet.decoded.payload) {
+            const text = new TextDecoder("utf-8").decode(packet.decoded.payload);
+            const senderInfo = appState.nodes.get(packet.from) || { longName: `Node ${packet.from.toString(16).toUpperCase()}` };
+            
+            // TODO: Отображение в UI чата
+            logger.info(`CHAT: [${senderInfo.longName}] ${text}`);
+            showToast(`New Message from ${senderInfo.longName}`, 'info');
+        }
+    }
+}
+
+
+// ============================================================================
+// 3. BLE CONNECTION (FIXED PROTOBUF)
 // ============================================================================
 
 const bleConnection = {
   device: null,
-  server: null,
-  service: null,
   toRadio: null,
   fromRadio: null,
-  fromNum: null,
-  reader: null,
-  isReading: false,
+  
+  async connect() {
+    await protoCodec.init();
+    logger.info('Starting BLE connection...');
+    updateUIConnection('Connecting...', 'connecting');
 
-  async scan() {
-    logger.info('Starting BLE scan...');
     try {
       if (!navigator.bluetooth) {
         throw new Error('Web Bluetooth not supported');
       }
 
       this.device = await navigator.bluetooth.requestDevice({
-        filters: [
-          { services: [BLE_SERVICE_UUID] }
-        ],
+        filters: [{ services: [BLE_SERVICE_UUID] }],
         optionalServices: [BLE_SERVICE_UUID]
       });
 
-      logger.info(`Device found: ${this.device.name || 'Unknown'}`);
-      return this.device;
-    } catch (error) {
-      logger.error('BLE scan failed', error.message);
-      throw error;
-    }
-  },
+      this.device.addEventListener('gattserverdisconnected', () => this.disconnect());
 
-  async connect() {
-    logger.info('Connecting to BLE device...');
-    try {
-      if (!this.device) {
-        await this.scan();
-      }
-
-      // Connect to GATT server
-      logger.debug('Connecting to GATT server...');
-      this.server = await this.device.gatt.connect();
-      logger.info('✓ GATT server connected');
-
-      // Get Meshtastic service
-      logger.debug('Getting Meshtastic service...');
-      this.service = await this.server.getPrimaryService(BLE_SERVICE_UUID);
-      logger.info('✓ Meshtastic service found');
-
-      // Get characteristics
-      logger.debug('Getting characteristics...');
-      this.toRadio = await this.service.getCharacteristic(TORADIO_UUID);
-      this.fromRadio = await this.service.getCharacteristic(FROMRADIO_UUID);
-      this.fromNum = await this.service.getCharacteristic(FROMNUM_UUID);
-      logger.info('✓ All characteristics acquired');
-
-      // Start notifications
-      logger.debug('Starting notifications...');
+      const server = await this.device.gatt.connect();
+      const service = await server.getPrimaryService(BLE_SERVICE_UUID);
+      
+      this.toRadio = await service.getCharacteristic(TORADIO_UUID);
+      this.fromRadio = await service.getCharacteristic(FROMRADIO_UUID);
+      
       await this.fromRadio.startNotifications();
-      this.fromRadio.addEventListener('characteristicvaluechanged', (event) => {
-        this.handleFromRadioData(event.target.value);
-      });
-      logger.info('✓ Notifications started');
+      this.fromRadio.addEventListener('characteristicvaluechanged', (e) => this.handleFromRadioData(e.target.value));
 
-      appState.device = this.device;
-      appState.server = this.server;
-      appState.service = this.service;
-      appState.characteristics = {
-        toRadio: this.toRadio,
-        fromRadio: this.fromRadio,
-        fromNum: this.fromNum
-      };
-      appState.connectionType = 'ble';
-      appState.isConnected = true;
+      updateUIConnection('Connected (BLE)', 'connected');
+      logger.success('BLE connection established');
 
-      updateUIConnection();
-      logger.info('✓ BLE connection established');
-
-      // Send handshake
       await this.sendHandshake();
 
-      // Start reading
-      this.startReading();
-
-      showToast('BLE connected successfully!', 'success');
     } catch (error) {
       logger.error('BLE connection failed', error.message);
       this.disconnect();
+      updateUIConnection('Disconnected', 'disconnected');
       showToast('BLE connection failed', 'error');
-      throw error;
     }
   },
 
   async sendHandshake() {
-    logger.debug('Sending handshake (want_config_id)...');
+    logger.debug('Sending Protobuf handshake...');
     try {
-      // Simple handshake: send want_config_id = 0
-      const configRequest = new Uint8Array([0x08, 0x00]); // wantConfigId field
-      await this.toRadio.writeValue(configRequest);
-      logger.info('✓ Handshake sent');
+      const handshakeBuffer = protoCodec.encodeHandshake();
+      await this.toRadio.writeValue(handshakeBuffer);
+      logger.info('✓ Handshake sent (wantConfigId=0)');
     } catch (error) {
       logger.error('Handshake failed', error.message);
     }
@@ -109,112 +374,36 @@ const bleConnection = {
 
   handleFromRadioData(value) {
     const data = new Uint8Array(value.buffer);
-    logger.debug(`Received ${data.length} bytes from device`);
-
-    // Simple packet logging
-    const hex = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ');
-    logger.debug(`RAW: ${hex}`);
-
-    // Try to parse (simplified - real implementation needs protobuf)
-    this.parsePacket(data);
+    logger.debug(`BLE Received ${data.length} bytes`);
+    processMeshPacket(data);
   },
 
-  parsePacket(data) {
-    // Simplified packet parsing
-    if (data.length === 0) {
-      logger.debug('Empty packet (queue cleared)');
-      return;
-    }
-
-    // For demo: just log what we receive
-    logger.info(`Packet received: ${data.length} bytes`);
-
-    // In real implementation, decode protobuf here
-    // For now, update UI with dummy data
-    if (!appState.deviceInfo.nodeId) {
-      appState.deviceInfo = {
-        nodeId: '!12345678',
-        firmwareVersion: '2.x.x',
-        hwModel: 'heltec_v4',
-        region: 'RU'
-      };
-      appState.loraConfig = {
-        txPower: 20,
-        spreadFactor: 9,
-        bandwidth: 125,
-        frequency: 869.5
-      };
-      updateUIInfo();
-    }
-  },
-
-  async startReading() {
-    this.isReading = true;
-    logger.debug('Starting continuous read loop...');
-
-    while (this.isConnected && this.isReading) {
-      try {
-        const numValue = await this.fromNum.readValue();
-        const numBytes = numValue.getUint32(0, true);
-
-        if (numBytes > 0) {
-          logger.debug(`${numBytes} bytes available to read`);
-          const data = await this.fromRadio.readValue();
-          this.handleFromRadioData(data);
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (error) {
-        if (this.isConnected) {
-          logger.error('Read error', error.message);
-        }
-        break;
-      }
-    }
-  },
-
-  async sendMessage(text, destination = 0xFFFFFFFF) {
-    logger.info(`Sending message: "${text}" to ${destination.toString(16)}`);
+  async sendMessage(text, destination) {
+    logger.info(`Sending message via BLE: "${text}"`);
     try {
-      // Simplified message encoding (real needs protobuf)
-      const encoder = new TextEncoder();
-      const textBytes = encoder.encode(text);
-
-      // For demo purposes
-      await this.toRadio.writeValue(textBytes);
-      logger.info('✓ Message sent');
+      const packetBuffer = protoCodec.encodeTextPacket(text, destination);
+      await this.toRadio.writeValue(packetBuffer);
+      logger.info('✓ Message sent via BLE');
       showToast('Message sent!', 'success');
     } catch (error) {
-      logger.error('Send failed', error.message);
-      showToast('Failed to send message', 'error');
+      logger.error('BLE Send failed', error.message);
+      throw error;
     }
   },
 
   disconnect() {
     logger.info('Disconnecting BLE...');
-    this.isReading = false;
-
     if (this.device && this.device.gatt.connected) {
       this.device.gatt.disconnect();
     }
-
     this.device = null;
-    this.server = null;
-    this.service = null;
-    this.toRadio = null;
-    this.fromRadio = null;
-    this.fromNum = null;
-
-    appState.isConnected = false;
-    appState.connectionType = null;
-    updateUIConnection();
-    logger.info('✓ BLE disconnected');
-    showToast('Disconnected', 'info');
+    updateUIConnection('Disconnected', 'disconnected');
   }
 };
 
+
 // ============================================================================
-// SERIAL CONNECTION (FIXED)
+// 4. SERIAL CONNECTION (CRITICAL FIX: PROTOBUF FRAME READER)
 // ============================================================================
 
 const serialConnection = {
@@ -225,59 +414,43 @@ const serialConnection = {
   buffer: new Uint8Array(0),
 
   async connect() {
+    await protoCodec.init();
     logger.info('Opening serial port...');
+    updateUIConnection('Connecting...', 'connecting');
+
     try {
       if (!('serial' in navigator)) {
         throw new Error('Web Serial API not supported');
       }
 
-      // Request port
       this.port = await navigator.serial.requestPort();
-      logger.info('✓ Serial port selected');
+      // Meshtastic использует 115200
+      await this.port.open({ baudRate: 115200 }); 
+      
+      this.reader = this.port.readable.getReader();
+      this.writer = this.port.writable.getWriter();
 
-      // Open with baudrate
-      await this.port.open({ baudRate: 115200 });
-      logger.info('✓ Serial port opened at 115200 baud');
-
-      // Get streams
-      const textDecoder = new TextDecoderStream();
-      const readableStreamClosed = this.port.readable.pipeTo(textDecoder.writable);
-      this.reader = textDecoder.readable.getReader();
-
-      const textEncoder = new TextEncoderStream();
-      const writableStreamClosed = textEncoder.readable.pipeTo(this.port.writable);
-      this.writer = textEncoder.writable.getWriter();
-
-      appState.serialPort = this.port;
-      appState.serialReader = this.reader;
       appState.connectionType = 'serial';
-      appState.isConnected = true;
+      updateUIConnection('Connected (Serial)', 'connected');
+      logger.success('Serial connection established');
 
-      updateUIConnection();
-      logger.info('✓ Serial connection established');
-
-      // Send handshake
       await this.sendHandshake();
-
-      // Start reading
       this.startReading();
 
-      showToast('Serial connected!', 'success');
     } catch (error) {
       logger.error('Serial connection failed', error.message);
       this.disconnect();
+      updateUIConnection('Disconnected', 'disconnected');
       showToast('Serial connection failed', 'error');
-      throw error;
     }
   },
 
   async sendHandshake() {
-    logger.debug('Sending serial handshake...');
+    logger.debug('Sending serial Protobuf handshake...');
     try {
-      // Send want_config_id
-      const handshake = new Uint8Array([0x94, 0xC3, 0x00, 0x00]); // Magic header + wantConfigId
-      await this.writer.write(handshake);
-      logger.info('✓ Serial handshake sent');
+      const handshakeBuffer = protoCodec.encodeHandshake();
+      await this.writer.write(handshakeBuffer);
+      logger.info('✓ Serial Handshake sent');
     } catch (error) {
       logger.error('Serial handshake failed', error.message);
     }
@@ -285,70 +458,123 @@ const serialConnection = {
 
   async startReading() {
     this.isReading = true;
-    logger.debug('Starting serial read loop...');
+    logger.debug('Starting serial read loop (Protobuf frame reader)...');
 
     try {
-      while (this.isReading) {
+      while (this.isReading && this.port.readable) {
         const { value, done } = await this.reader.read();
-        if (done) {
-          logger.warn('Serial stream closed');
-          break;
-        }
+        if (done) break;
 
-        logger.debug(`Serial received: ${value}`);
-        this.handleData(value);
+        // Конкатенируем новый буфер с тем, что уже есть
+        const newBuffer = new Uint8Array(this.buffer.length + value.length);
+        newBuffer.set(this.buffer);
+        newBuffer.set(value, this.buffer.length);
+        this.buffer = newBuffer;
+
+        let packetFound = true;
+        while (packetFound) {
+            packetFound = false;
+
+            // 1. Ищем Magic Header (0x94 0xC3)
+            let headerIndex = -1;
+            for(let i = 0; i < this.buffer.length - 1; i++) {
+                if (this.buffer[i] === SERIAL_MAGIC_HEADER[0] && this.buffer[i + 1] === SERIAL_MAGIC_HEADER[1]) {
+                    headerIndex = i;
+                    break;
+                }
+            }
+
+            if (headerIndex === -1) {
+                // Если буфер большой, но заголовка нет, чистим и выходим
+                if (this.buffer.length > MAX_PACKET_SIZE * 2) { 
+                    this.buffer = new Uint8Array(0); 
+                    logger.warn('Serial: No magic header found, buffer large. Resetting.');
+                }
+                break; 
+            }
+            
+            // Сдвигаем буфер на начало пакета (если нужно)
+            if (headerIndex > 0) {
+                this.buffer = this.buffer.slice(headerIndex);
+                logger.debug(`Serial: Trimmed ${headerIndex} bytes before magic header.`);
+            }
+            
+            // 2. Проверяем, достаточно ли данных для чтения длины
+            if (this.buffer.length < 4) break; // Нужны 2 Magic + 2 Length
+            
+            const view = new DataView(this.buffer.buffer, this.buffer.byteOffset);
+            // Длина пакета закодирована как little-endian uint16 (начинается с offset 2)
+            const packetLength = view.getUint16(2, true); 
+            
+            if (packetLength > MAX_PACKET_SIZE || packetLength < 1) {
+                logger.error(`Serial: Invalid length ${packetLength}. Corrupted stream. Resetting.`);
+                this.buffer = new Uint8Array(0); 
+                break;
+            }
+            
+            // 3. Проверяем, достаточно ли данных для всего кадра
+            const totalFrameSize = 4 + packetLength; 
+            if (this.buffer.length >= totalFrameSize) {
+                // Пакет получен!
+                const packetData = this.buffer.slice(4, totalFrameSize); // Вырезаем Protobuf-payload
+                this.buffer = this.buffer.slice(totalFrameSize); // Сдвигаем буфер для следующего пакета
+
+                logger.debug(`Serial frame size: ${totalFrameSize}, payload: ${packetLength}. Decoding...`);
+                processMeshPacket(packetData); // Обработка чистого Protobuf
+                packetFound = true; // Продолжаем проверять, нет ли еще пакетов
+            }
+        }
       }
     } catch (error) {
       if (this.isReading) {
         logger.error('Serial read error', error.message);
       }
-    }
-  },
-
-  handleData(data) {
-    logger.info(`Serial data: ${data}`);
-
-    // Update UI with dummy data on first packet
-    if (!appState.deviceInfo.nodeId) {
-      appState.deviceInfo = {
-        nodeId: '!87654321',
-        firmwareVersion: '2.x.x',
-        hwModel: 'heltec_v4',
-        region: 'RU'
-      };
-      appState.loraConfig = {
-        txPower: 20,
-        spreadFactor: 9,
-        bandwidth: 125,
-        frequency: 869.5
-      };
-      updateUIInfo();
+    } finally {
+      this.disconnect();
     }
   },
 
   async sendMessage(text) {
     logger.info(`Sending message via serial: "${text}"`);
     try {
-      await this.writer.write(`MSG:${text}\n`);
-      logger.info('✓ Message sent via serial');
+      const packetBuffer = protoCodec.encodeTextPacket(text);
+      // Serial API Meshtastic ожидает фрейм (Magic + Length + Payload)
+      const frameLength = packetBuffer.length;
+      const frame = new Uint8Array(4 + frameLength);
+      
+      // Magic Header 0x94 0xC3
+      frame[0] = SERIAL_MAGIC_HEADER[0];
+      frame[1] = SERIAL_MAGIC_HEADER[1];
+      
+      // Length (little-endian uint16)
+      frame[2] = frameLength & 0xFF;
+      frame[3] = (frameLength >> 8) & 0xFF;
+      
+      // Payload
+      frame.set(packetBuffer, 4); 
+
+      await this.writer.write(frame);
+      logger.info('✓ Message sent via Serial');
       showToast('Message sent!', 'success');
     } catch (error) {
       logger.error('Serial send failed', error.message);
-      showToast('Failed to send', 'error');
+      throw error;
     }
   },
 
   async disconnect() {
     logger.info('Closing serial port...');
     this.isReading = false;
+    this.buffer = new Uint8Array(0);
 
     try {
       if (this.reader) {
+        // Завершаем цикл чтения
         await this.reader.cancel();
         await this.reader.releaseLock();
       }
       if (this.writer) {
-        await this.writer.close();
+        await this.writer.releaseLock();
       }
       if (this.port) {
         await this.port.close();
@@ -358,19 +584,13 @@ const serialConnection = {
     }
 
     this.port = null;
-    this.reader = null;
-    this.writer = null;
-
-    appState.isConnected = false;
-    appState.connectionType = null;
-    updateUIConnection();
-    logger.info('✓ Serial disconnected');
-    showToast('Disconnected', 'info');
+    updateUIConnection('Disconnected', 'disconnected');
   }
 };
 
+
 // ============================================================================
-// TCP CONNECTION (FIXED)
+// 5. TCP CONNECTION (FIXED BASE64 ENCODING)
 // ============================================================================
 
 const tcpConnection = {
@@ -378,60 +598,59 @@ const tcpConnection = {
   pollInterval: null,
 
   async connect() {
-    const ip = document.getElementById('tcpIpInput').value;
-    const port = document.getElementById('tcpPortInput').value || '4403';
-
-    if (!ip) {
-      showToast('Enter IP address', 'warning');
+    await protoCodec.init();
+    const address = document.getElementById('tcpAddress').value.trim();
+    if (!address) {
+      showToast('Enter IP address and port', 'warning');
       return;
     }
-
-    this.baseUrl = `http://${ip}:${port}`;
+    this.baseUrl = `http://${address.replace(/^http:\/\//i, '').replace(/\/$/, '')}`;
     logger.info(`Connecting to TCP: ${this.baseUrl}`);
+    updateUIConnection('Connecting...', 'connecting');
 
     try {
-      // Test connection
-      const response = await fetch(`${this.baseUrl}/api/v1/fromradio`, {
-        method: 'GET',
-        mode: 'cors',
-        timeout: 5000
-      });
+      // Проверяем связь, запрашивая информацию о ноде
+      const response = await fetch(`${this.baseUrl}/json/myNode`);
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      
+      const info = await response.json();
+      
+      // Обновляем информацию о себе
+      appState.deviceInfo.nodeId = info.num;
+      appState.deviceInfo.channelName = info.longName;
+      updateUIInfo();
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      logger.info('✓ TCP connection test successful');
-
-      appState.tcpUrl = this.baseUrl;
       appState.connectionType = 'tcp';
-      appState.isConnected = true;
+      updateUIConnection('Connected (TCP/IP)', 'connected');
+      logger.success('TCP connection established');
 
-      updateUIConnection();
-
-      // Send handshake
+      // Рукопожатие для запроса конфигурации
       await this.sendHandshake();
 
-      // Start polling
+      // Начинаем опрос
       this.startPolling();
 
-      showToast('TCP connected!', 'success');
     } catch (error) {
       logger.error('TCP connection failed', error.message);
       this.disconnect();
+      updateUIConnection('Disconnected', 'disconnected');
       showToast('TCP connection failed', 'error');
-      throw error;
     }
   },
 
   async sendHandshake() {
-    logger.debug('Sending TCP handshake...');
+    logger.debug('Sending TCP Protobuf handshake...');
     try {
-      await fetch(`${this.baseUrl}/api/v1/toradio`, {
-        method: 'PUT',
-        body: JSON.stringify({ wantConfigId: 0 })
+      const handshakeBuffer = protoCodec.encodeHandshake();
+      // Meshtastic HTTP API ожидает Base64 в JSON-теле
+      const base64Packet = btoa(String.fromCharCode(...handshakeBuffer)); 
+      
+      await fetch(`${this.baseUrl}/api/v1/toRadio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload: base64Packet })
       });
-      logger.info('✓ TCP handshake sent');
+      logger.info('✓ TCP Handshake sent');
     } catch (error) {
       logger.error('TCP handshake failed', error.message);
     }
@@ -441,76 +660,74 @@ const tcpConnection = {
     logger.debug('Starting TCP polling...');
     this.pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`${this.baseUrl}/api/v1/fromradio`);
+        // HTTP API предоставляет список пакетов
+        const response = await fetch(`${this.baseUrl}/json/meshPacket`);
         if (response.ok) {
-          const data = await response.arrayBuffer();
-          if (data.byteLength > 0) {
-            logger.debug(`TCP received ${data.byteLength} bytes`);
-            this.handleData(new Uint8Array(data));
+          const packets = await response.json();
+          if (Array.isArray(packets)) {
+            packets.forEach(packet => {
+                // HTTP API возвращает пакеты в JSON, а Protobuf-Payload в Base64.
+                if (packet.from) { 
+                    // Это сложный путь: мы получаем JSON-пакет, который нужно
+                    // перекодировать в Protobuf FromRadio.
+                    // Для упрощения: мы будем использовать только отправку.
+                    // Если нода поддерживает WebSockets, лучше использовать их.
+                    
+                    // TODO: Реализовать полное преобразование JSON в структуру FromRadio
+                    // Сейчас только логируем:
+                    if (packet.decoded && packet.decoded.payload) {
+                        const text = atob(packet.decoded.payload);
+                        logger.info(`TCP Poll: [Node ${packet.from.toString(16).toUpperCase()}] ${text}`);
+                    }
+                }
+            });
           }
         }
       } catch (error) {
         logger.warn('TCP poll error', error.message);
       }
-    }, 1000);
-  },
-
-  handleData(data) {
-    logger.info(`TCP packet: ${data.length} bytes`);
-
-    // Update UI with dummy data
-    if (!appState.deviceInfo.nodeId) {
-      appState.deviceInfo = {
-        nodeId: '!TCPNODE',
-        firmwareVersion: '2.x.x',
-        hwModel: 'esp32',
-        region: 'RU'
-      };
-      appState.loraConfig = {
-        txPower: 20,
-        spreadFactor: 9,
-        bandwidth: 125,
-        frequency: 869.5
-      };
-      updateUIInfo();
-    }
+    }, 5000); // Опрашиваем каждые 5 секунд
   },
 
   async sendMessage(text) {
     logger.info(`Sending TCP message: "${text}"`);
     try {
-      await fetch(`${this.baseUrl}/api/v1/toradio`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          packet: {
-            decoded: {
-              portnum: 1, // TEXT_MESSAGE_APP
-              payload: btoa(text)
-            }
-          }
-        })
+      const packetBuffer = protoCodec.encodeTextPacket(text);
+      const base64Packet = btoa(String.fromCharCode(...packetBuffer));
+
+      await fetch(`${this.baseUrl}/api/v1/toRadio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload: base64Packet })
       });
       logger.info('✓ TCP message sent');
       showToast('Message sent!', 'success');
     } catch (error) {
       logger.error('TCP send failed', error.message);
-      showToast('Failed to send', 'error');
+      throw error;
     }
   },
 
   disconnect() {
     logger.info('Disconnecting TCP...');
-
     if (this.pollInterval) {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
     }
-
     this.baseUrl = null;
-    appState.isConnected = false;
-    appState.connectionType = null;
-    updateUIConnection();
-    logger.info('✓ TCP disconnected');
-    showToast('Disconnected', 'info');
+    updateUIConnection('Disconnected', 'disconnected');
   }
 };
+
+
+// ============================================================================
+// 6. INITIALIZATION
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Установка начального активного подключения
+    switchConnTab('ble-tab'); 
+    
+    // Инициализация Protobuf
+    protoCodec.init(); 
+});

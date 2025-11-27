@@ -4,21 +4,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meshtastic Control Panel - Rudy Final Edition</title>
+  <title>Meshtastic Control Panel - Professional Edition</title>
 
   <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.4/dist/protobuf.min.js"></script>
 
   <style>
     :root {
-      --bg-dark: #0f172a;
-      --bg-panel: #1e293b;
-      --accent: #38bdf8;
-      /* Meshtastic Blue */
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --border: #334155;
-      --error: #ef4444;
-      --success: #22c55e;
+      --color-bg-primary: #0a0e1a;
+      --color-bg-secondary: #131829;
+      --color-bg-tertiary: #1a1f36;
+      --color-accent: #67c5e6;
+      --color-accent-hover: #4db8e0;
+      --color-success: #4ade80;
+      --color-warning: #fbbf24;
+      --color-error: #ef4444;
+      --color-text-primary: #e5e7eb;
+      --color-text-secondary: #9ca3af;
+      --color-border: #374151;
+      --color-border-light: #4b5563;
     }
 
     * {
@@ -28,888 +31,856 @@
     }
 
     body {
-      font-family: 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg-dark);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--color-bg-primary);
+      color: var(--color-text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
     }
 
     header {
-      background: var(--bg-panel);
-      padding: 15px 20px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .title {
-      font-size: 1.2rem;
-      color: var(--accent);
-    }
-
-    .status-badge {
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      background: rgba(239, 68, 68, 0.2);
-      color: var(--error);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .status-badge.connected {
-      background: rgba(34, 197, 94, 0.2);
-      color: var(--success);
-    }
-
-    .status-indicator {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: currentColor;
-      box-shadow: 0 0 5px currentColor;
-    }
-
-    .main-layout {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* Sidebar/Navigation */
-    .sidebar {
-      width: 200px;
-      background: var(--bg-panel);
-      border-right: 1px solid var(--border);
-      padding: 10px;
-    }
-
-    .nav-btn {
-      width: 100%;
-      text-align: left;
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 12px;
-      margin-bottom: 5px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .nav-btn:hover {
-      background: #2f3e53;
-      color: var(--text);
-    }
-
-    .nav-btn.active {
-      background: var(--accent);
-      color: var(--bg-dark);
-      font-weight: 600;
-    }
-
-    /* Content */
-    .content-area {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      max-width: 100%;
-    }
-
-    .view-section {
-      display: none;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    .view-section.active {
-      display: block;
-    }
-
-    .card {
-      background: var(--bg-panel);
-      border: 1px solid var(--border);
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
       border-radius: 8px;
       padding: 20px;
       margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
     }
 
-    .card h2 {
-      margin-bottom: 15px;
-      font-size: 1.1rem;
-      color: var(--accent);
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--color-accent);
     }
 
-    /* Forms */
-    input,
-    select {
-      width: 100%;
-      background: #334155;
-      border: 1px solid var(--border);
-      color: var(--text);
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .status-badge.disconnected {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--color-error);
+    }
+
+    .status-badge.connecting {
+      background: rgba(251, 191, 36, 0.2);
+      color: var(--color-warning);
+    }
+
+    .status-badge.connected {
+      background: rgba(74, 222, 128, 0.2);
+      color: var(--color-success);
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.5;
+      }
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      overflow-x: auto;
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
       padding: 10px;
+    }
+
+    .tab-button {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid var(--color-border);
       border-radius: 6px;
-      margin-bottom: 10px;
-      font-family: inherit;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .tab-button:hover {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+    }
+
+    .tab-button.active {
+      background: var(--color-accent);
+      color: var(--color-bg-primary);
+      border-color: var(--color-accent);
+    }
+
+    .tab-content {
+      display: none;
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .section {
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: var(--color-accent);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      color: var(--color-text-primary);
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--color-accent);
     }
 
     button {
       padding: 10px 20px;
-      border-radius: 6px;
+      background: var(--color-accent);
       border: none;
+      border-radius: 6px;
+      color: var(--color-bg-primary);
+      font-size: 14px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s;
-      background: var(--accent);
-      color: var(--bg-dark);
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: var(--color-accent-hover);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
     }
 
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      transform: none;
     }
 
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 10px;
+    button.secondary {
+      background: var(--color-bg-tertiary);
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
     }
 
-    /* Chat */
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      height: calc(100vh - 100px);
-      background: #131d2c;
-      border-radius: 8px;
-    }
-
-    #chat-messages {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .msg {
-      max-width: 80%;
-      padding: 10px 14px;
-      border-radius: 12px;
-      word-wrap: break-word;
-    }
-
-    .msg.in {
-      align-self: flex-start;
-      background: var(--bg-panel);
-      border-bottom-left-radius: 2px;
-    }
-
-    .msg.out {
-      align-self: flex-end;
-      background: #0e7490;
+    button.danger {
+      background: var(--color-error);
       color: white;
-      border-bottom-right-radius: 2px;
     }
 
-    .msg-meta {
-      font-size: 0.75rem;
-      margin-bottom: 4px;
-      opacity: 0.8;
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
-    .msg-time {
-      font-size: 0.7rem;
-      opacity: 0.6;
-      margin-top: 5px;
-      text-align: right;
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
     }
 
-    .chat-input-area {
+    .info-card {
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
       padding: 15px;
-      background: var(--bg-panel);
-      border-top: 1px solid var(--border);
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+
+    .info-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .log-console {
+      background: var(--color-bg-primary);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 15px;
+      max-height: 500px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+
+    .log-entry {
+      padding: 5px 0;
+      border-bottom: 1px solid var(--color-border);
       display: flex;
       gap: 10px;
     }
 
-    .chat-input-area input {
-      margin-bottom: 0;
-    }
-
-    /* Logs */
-    #log-output {
-      background: #000;
-      color: #0f0;
-      font-family: 'Consolas', monospace;
-      padding: 15px;
-      height: 250px;
-      overflow-y: auto;
-      font-size: 0.8rem;
-      border-radius: 6px;
-    }
-
-    .log-line {
-      margin-bottom: 2px;
+    .log-entry:last-child {
+      border-bottom: none;
     }
 
     .log-time {
-      color: #666;
-      margin-right: 10px;
+      color: var(--color-text-secondary);
+      min-width: 90px;
     }
 
-    .log-WARN {
-      color: #fbbf24;
+    .log-level {
+      min-width: 60px;
+      font-weight: 600;
     }
 
-    .log-ERROR {
-      color: #ef4444;
+    .log-level.DEBUG {
+      color: var(--color-text-secondary);
     }
 
-    .log-SUCCESS {
-      color: var(--success);
+    .log-level.INFO {
+      color: var(--color-accent);
+    }
+
+    .log-level.WARN {
+      color: var(--color-warning);
+    }
+
+    .log-level.ERROR {
+      color: var(--color-error);
+    }
+
+    .log-message {
+      flex: 1;
+      word-break: break-word;
+    }
+
+    .device-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .device-item {
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .device-item:hover {
+      border-color: var(--color-accent);
+      background: rgba(103, 197, 230, 0.1);
+    }
+
+    .device-info {
+      flex: 1;
+    }
+
+    .device-name {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 5px;
+    }
+
+    .device-details {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+    }
+
+    .rssi-indicator {
+      padding: 5px 10px;
+      background: rgba(103, 197, 230, 0.2);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .slider-container {
+      margin: 15px 0;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      background: var(--color-bg-tertiary);
+      border-radius: 3px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+    }
+
+    .message-list {
+      max-height: 400px;
+      overflow-y: auto;
+      background: var(--color-bg-primary);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 15px;
+    }
+
+    .message-item {
+      background: var(--color-bg-tertiary);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--color-text-secondary);
+    }
+
+    .message-body {
+      color: var(--color-text-primary);
+      word-break: break-word;
+    }
+
+    .node-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--color-bg-tertiary);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .node-table th,
+    .node-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .node-table th {
+      background: var(--color-bg-primary);
+      font-weight: 600;
+      color: var(--color-accent);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .node-table tbody tr:hover {
+      background: rgba(103, 197, 230, 0.1);
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 15px;
+      color: var(--color-accent);
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      background: var(--color-bg-secondary);
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      z-index: 2000;
+      min-width: 300px;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--color-success);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--color-error);
+    }
+
+    .toast.warning {
+      border-left: 4px solid var(--color-warning);
+    }
+
+    .toast.info {
+      border-left: 4px solid var(--color-accent);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(103, 197, 230, 0.3);
+      border-top-color: var(--color-accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .help-box {
+      background: rgba(103, 197, 230, 0.1);
+      border: 1px solid var(--color-accent);
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .help-box h3 {
+      color: var(--color-accent);
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .help-box ol {
+      margin-left: 20px;
+    }
+
+    .help-box li {
+      margin: 5px 0;
+      font-size: 14px;
+    }
+
+    @media (max-width: 768px) {
+      .app-container {
+        padding: 10px;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .tabs {
+        flex-wrap: wrap;
+      }
+
+      .tab-button {
+        flex: 1;
+        min-width: 100px;
+      }
     }
   </style>
 </head>
 
 <body>
+  <div class="app-container">
+    <header>
+      <h1>🛰️ Meshtastic Control Panel</h1>
+      <div class="status-badge disconnected" id="connectionStatus">
+        <span class="status-indicator"></span>
+        <span id="statusText">Disconnected</span>
+      </div>
+    </header>
 
-  <header>
-    <div class="title">🛰️ Meshtastic Rudy-Controller</div>
-    <div class="status-badge" id="global-status">
-      <span class="status-indicator"></span>
-      <span id="status-text">Ожидание</span>
+    <div class="tabs">
+      <button class="tab-button active" data-tab="connection" onclick="switchTab('connection')">🔌 Connection</button>
+      <button class="tab-button" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+      <button class="tab-button" data-tab="lora" onclick="switchTab('lora')">📡 LoRa Config</button>
+      <button class="tab-button" data-tab="messages" onclick="switchTab('messages')">💬 Messages</button>
+      <button class="tab-button" data-tab="nodes" onclick="switchTab('nodes')">🌐 Nodes</button>
+      <button class="tab-button" data-tab="admin" onclick="switchTab('admin')">⚙️ Admin</button>
+      <button class="tab-button" data-tab="logs" onclick="switchTab('logs')">📝 Logs</button>
     </div>
-  </header>
 
-  <div class="main-layout">
-    <nav class="sidebar">
-      <button class="nav-btn active" onclick="router.navigate('connection')">🔌 Подключение</button>
-      <button class="nav-btn" onclick="router.navigate('chat')" id="nav-chat">💬 Чат</button>
-      <button class="nav-btn" onclick="router.navigate('nodes')">👥 Узлы</button>
-      <button class="nav-btn" onclick="router.navigate('config')">⚙️ Настройки</button>
-    </nav>
-
-    <main class="content-area">
-
-      <div id="view-connection" class="view-section active">
-        <div class="card">
-          <h2>Выберите тип подключения</h2>
-          <div class="btn-group" style="margin-bottom: 20px;">
-            <button onclick="meshtasticClient.setMode('ble')">Bluetooth (WebBLE)</button>
-            <button onclick="meshtasticClient.setMode('serial')">USB (Serial)</button>
-            <button onclick="meshtasticClient.setMode('http')">Wi-Fi (HTTP)</button>
-          </div>
-
-          <div id="conn-form-ble" style="display: none;">
-            <p style="margin-bottom: 10px; color: var(--text-muted);">Требуется Chrome/Edge и HTTPS/localhost.</p>
-            <button onclick="meshtasticClient.connectBLE()">🔍 Подключить по Bluetooth</button>
-          </div>
-
-          <div id="conn-form-serial" style="display: none;">
-            <p style="margin-bottom: 10px; color: var(--text-muted);">Прямое подключение через USB-порт.</p>
-            <button onclick="meshtasticClient.connectSerial()">🔌 Подключить USB-порт</button>
-          </div>
-
-          <div id="conn-form-http" style="display: none;">
-            <p style="margin-bottom: 10px; color: var(--text-muted);">Для работы Meshtastic должен быть в режиме Wi-Fi
-              клиента/точки доступа.</p>
-            <input type="text" id="http-ip" placeholder="IP адрес ноды (например, 192.168.42.1)"
-              value="http://192.168.42.1">
-            <button onclick="meshtasticClient.connectHTTP()">🌐 Подключить по Wi-Fi</button>
-          </div>
-
-          <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 20px;">
-            <p style="color: var(--text-muted);">Мой ID: <strong id="my-node-id">N/A</strong></p>
-            <p style="color: var(--text-muted);">Моё Имя: <strong id="my-node-name">N/A</strong></p>
-          </div>
-        </div>
+    <div class="tab-content active" id="connection">
+      <div class="help-box">
+        <h3>📖 Руководство по подключению</h3>
+        <ol>
+          <li>Убедитесь, что нода включена и готова.</li>
+          <li>Для BLE/Serial используйте **Chrome/Edge** и **HTTPS/localhost**.</li>
+          <li>Для Serial: переключите ноду в режим **Serial/Native** (если требуется).</li>
+          <li>Для TCP: введите адрес HTTP-интерфейса (например, `192.168.42.1:80`)</li>
+        </ol>
       </div>
 
-      <div id="view-chat" class="view-section">
-        <div class="chat-container">
-          <div id="chat-messages">
-            <div style="text-align: center; color: var(--text-muted); margin-top: 20px;">
-              Подключитесь к ноде, чтобы начать чат.
-            </div>
-          </div>
-          <div class="chat-input-area">
-            <input type="text" id="msg-input" placeholder="Введите сообщение..."
-              onkeypress="if(event.key === 'Enter') chatEngine.send()" disabled>
-            <button onclick="chatEngine.send()" id="btn-send" disabled>📤 Отправить</button>
-          </div>
-        </div>
+      <div class="tabs">
+        <button class="tab-button active" data-tab="ble-tab" onclick="switchConnTab('ble-tab')">📱 BLE
+          (Bluetooth)</button>
+        <button class="tab-button" data-tab="serial-tab" onclick="switchConnTab('serial-tab')">🔌 Serial/USB</button>
+        <button class="tab-button" data-tab="tcp-tab" onclick="switchConnTab('tcp-tab')">🌐 TCP/Network</button>
       </div>
 
-      <div id="view-nodes" class="view-section">
-        <div class="card">
-          <h2>Известные узлы в Mesh-сети</h2>
-          <div id="node-list-container"
-            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;">
-            <p style="color: var(--text-muted);">Здесь появятся узлы, как только они будут получены от ноды.</p>
-          </div>
-        </div>
-      </div>
-
-      <div id="view-config" class="view-section">
-        <div class="card">
-          <h2>Основные настройки (Упрощенно)</h2>
-          <p style="color: var(--text-muted); margin-bottom: 20px;">Для изменения настроек нода должна быть подключена.
+      <div class="tab-content active" id="ble-tab" style="margin-top: 20px;">
+        <div class="section">
+          <h2 class="section-title">Bluetooth Low Energy Connection</h2>
+          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
+            Рекомендуется для беспроводных устройств. Использует Web Bluetooth API.
           </p>
-
-          <label for="longNameInput" style="display: block; margin-bottom: 5px;">Моё Длинное Имя (LongName)</label>
-          <input type="text" id="longNameInput" placeholder="Rudy">
-
-          <label for="channelNameInput" style="display: block; margin-bottom: 5px;">Имя Канала (Channel Name)</label>
-          <input type="text" id="channelNameInput" placeholder="LongFast">
-
-          <button onclick="alert('TODO: Implement config saving via ToRadio packet')">💾 Сохранить настройки</button>
-        </div>
-        <div class="card">
-          <h2>Системные логи</h2>
-          <div id="log-output"></div>
-          <button onclick="logger.clear()" style="margin-top: 10px;">Очистить лог</button>
+          <div class="button-group">
+            <button id="bleScanBtn" onclick="bleConnection.connect()">🔍 Сканировать и Подключить</button>
+            <button id="bleDisconnectBtn" class="secondary" onclick="bleConnection.disconnect()"
+              disabled>Отключить</button>
+          </div>
+          <div id="bleDeviceList" class="device-list"></div>
         </div>
       </div>
-    </main>
+
+      <div class="tab-content" id="serial-tab" style="margin-top: 20px;">
+        <div class="section">
+          <h2 class="section-title">Serial/USB Connection</h2>
+          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
+            Прямое USB-подключение. КЛЮЧЕВОЕ ИЗМЕНЕНИЕ: исправлен фрейм-ридер для Protobuf.
+          </p>
+          <div class="button-group">
+            <button id="serialConnectBtn" onclick="serialConnection.connect()">🔌 Подключить Serial Port</button>
+            <button id="serialDisconnectBtn" class="secondary" onclick="serialConnection.disconnect()"
+              disabled>Отключить</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tcp-tab" style="margin-top: 20px;">
+        <div class="section">
+          <h2 class="section-title">TCP/Network Connection</h2>
+          <p style="color: var(--color-text-secondary); margin-bottom: 15px;">
+            Подключение к HTTP-интерфейсу ноды (Wi-Fi).
+          </p>
+          <div class="form-group">
+            <label>Адрес IP и Порт (например, 192.168.42.1:80)</label>
+            <input type="text" id="tcpAddress" placeholder="192.168.1.100:80" value="192.168.42.1:80">
+          </div>
+          <div class="button-group">
+            <button id="tcpConnectBtn" onclick="tcpConnection.connect()">🌐 Подключить TCP</button>
+            <button id="tcpDisconnectBtn" class="secondary" onclick="tcpConnection.disconnect()"
+              disabled>Отключить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="dashboard">
+      <div class="section">
+        <h2 class="section-title">Device Information</h2>
+        <div class="info-grid" id="deviceInfo">
+          <div class="info-card">
+            <div class="info-label">Node ID</div>
+            <div class="info-value" id="nodeId">-</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Hardware Model</div>
+            <div class="info-value" id="hwModel">-</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Firmware Version</div>
+            <div class="info-value" id="fwVersion">-</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Battery Level</div>
+            <div class="info-value" id="battery">-</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Region</div>
+            <div class="info-value" id="region">-</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Channel Name</div>
+            <div class="info-value" id="channelName">-</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Known Nodes</div>
+            <div class="info-value" id="nodeCount">0</div>
+          </div>
+          <div class="info-card">
+            <div class="info-label">Uptime</div>
+            <div class="info-value" id="uptime">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="lora">
+      <div class="section">
+        <h2 class="section-title">LoRa Configuration</h2>
+        <div class="form-group">
+          <label>TX Power: <span id="txPowerValue">20</span> dBm</label>
+          <div class="slider-container">
+            <input type="range" id="txPower" min="0" max="30" value="20">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Spreading Factor</label>
+          <select id="spreadingFactor">
+            <option value="7">SF7 (Fastest, shortest range)</option>
+            <option value="8">SF8</option>
+            <option value="9">SF9</option>
+            <option value="10" selected>SF10</option>
+            <option value="11">SF11</option>
+            <option value="12">SF12 (Slowest, longest range)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Bandwidth</label>
+          <select id="bandwidth">
+            <option value="62.5">62.5 kHz</option>
+            <option value="125">125 kHz</option>
+            <option value="250" selected>250 kHz</option>
+            <option value="500">500 kHz</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Coding Rate</label>
+          <select id="codingRate">
+            <option value="5" selected>4/5</option>
+            <option value="6">4/6</option>
+            <option value="7">4/7</option>
+            <option value="8">4/8</option>
+          </select>
+        </div>
+        <div class="button-group">
+          <button id="applyLoraBtn">✅ Применить Конфигурацию</button>
+          <button class="secondary" id="revertLoraBtn">↶ Отменить Изменения</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="messages">
+      <div class="section">
+        <h2 class="section-title">Send Message</h2>
+        <div class="form-group">
+          <label>Recipient</label>
+          <select id="messageRecipient">
+            <option value="broadcast">📢 Широковещание (Все узлы)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="messageText" rows="3" placeholder="Введите сообщение здесь..."></textarea>
+        </div>
+        <div class="button-group">
+          <button id="sendMessageBtn" onclick="sendMessageHandler()">📤 Отправить Сообщение</button>
+          <button class="secondary" id="clearMessagesBtn">🗑️ Очистить Историю</button>
+        </div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Message History</h2>
+        <div class="message-list" id="messageList">
+          <p style="color: var(--color-text-secondary); text-align: center;">Нет сообщений</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="nodes">
+      <div class="section">
+        <h2 class="section-title">Mesh Network Nodes</h2>
+        <div style="overflow-x: auto;">
+          <table class="node-table" id="nodeTable">
+            <thead>
+              <tr>
+                <th>Node ID</th>
+                <th>Name</th>
+                <th>Last Heard</th>
+                <th>RSSI</th>
+                <th>SNR</th>
+                <th>Hops</th>
+              </tr>
+            </thead>
+            <tbody id="nodeTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--color-text-secondary);">Узлы пока не обнаружены
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="admin">
+      <div class="section">
+        <h2 class="section-title">Device Administration</h2>
+        <div class="form-group">
+          <label>Device Long Name</label>
+          <input type="text" id="deviceLongName" placeholder="My Meshtastic Device" maxlength="40">
+        </div>
+        <div class="form-group">
+          <label>Device Short Name</label>
+          <input type="text" id="deviceShortName" placeholder="MESH" maxlength="4">
+        </div>
+        <div class="button-group">
+          <button id="updateDeviceNameBtn">💾 Обновить Имя Устройства</button>
+        </div>
+      </div>
+      <div class="section">
+        <h2 class="section-title">Device Actions</h2>
+        <div class="button-group">
+          <button class="secondary" id="rebootDeviceBtn">🔄 Перезагрузить Устройство</button>
+          <button class="secondary" id="exportConfigBtn">📥 Экспорт Конфигурации</button>
+          <button class="danger" id="factoryResetBtn">⚠️ Сброс до заводских настроек</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="logs">
+      <div class="section">
+        <h2 class="section-title">System Logs</h2>
+        <div class="button-group" style="margin-bottom: 15px;">
+          <button class="secondary" id="clearLogsBtn" onclick="logger.clear()">🗑️ Очистить Логи</button>
+          <button class="secondary" id="exportLogsBtn">📥 Экспорт Логов</button>
+          <select id="logLevelFilter" style="width: auto;">
+            <option value="ALL">Все Уровни</option>
+            <option value="DEBUG">DEBUG</option>
+            <option value="INFO">INFO</option>
+            <option value="WARN">WARN</option>
+            <option value="ERROR">ERROR</option>
+          </select>
+        </div>
+        <div class="log-console" id="logConsole"></div>
+      </div>
+    </div>
   </div>
 
-  <script>
-    // ==========================================
-    // 1. КОНСТАНТЫ И ОПРЕДЕЛЕНИЯ PROTOBUF
-    // ==========================================
-
-    const UUIDS = {
-      SERVICE: '6ba1b218-102e-462f-a498-565df2d75a3d',
-      TORADIO: 'f75c76d2-129e-4dad-a1dd-7866124401e7',
-      FROMRADIO: '2c55e69e-4993-11ea-8797-2e728ce88125'
-    };
-
-    // Схема Protobuf Meshtastic (минимально необходимая для чата и узлов)
-    const MESHTASTIC_PROTO_JSON = {
-      "nested": {
-        "meshtastic": {
-          "nested": {
-            "PortNum": {
-              "values": {
-                "UNKNOWN_APP": 0,
-                "TEXT_MESSAGE_APP": 1,
-                "POSITION_APP": 3,
-                "NODEINFO_APP": 4
-              }
-            },
-            "MeshPacket": {
-              "fields": {
-                "from": { "type": "fixed32", "id": 1 },
-                "to": { "type": "fixed32", "id": 2 },
-                "decoded": { "type": "Data", "id": 4 },
-                "id": { "type": "fixed32", "id": 6 },
-                "rxTime": { "type": "fixed32", "id": 7 } // Время, когда нода получила пакет
-              }
-            },
-            "Data": {
-              "fields": {
-                "portnum": { "type": "PortNum", "id": 1 },
-                "payload": { "type": "bytes", "id": 2 }
-              }
-            },
-            "FromRadio": {
-              "fields": {
-                "packet": { "type": "MeshPacket", "id": 11 },
-                "myInfo": { "type": "MyNodeInfo", "id": 3 },
-                "nodeInfo": { "type": "NodeInfo", "id": 4 }
-              }
-            },
-            "MyNodeInfo": { "fields": { "myNodeNum": { "type": "fixed32", "id": 1 } } },
-            "NodeInfo": { "fields": { "num": { "type": "fixed32", "id": 1 }, "user": { "type": "User", "id": 2 } } },
-            "User": { "fields": { "longName": { "type": "string", "id": 2 } } },
-            "ToRadio": { "fields": { "packet": { "type": "MeshPacket", "id": 1 } } }
-          }
-        }
-      }
-    };
-
-    // ==========================================
-    // 2. ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ (LOGGER, ROUTER)
-    // ==========================================
-
-    const logger = {
-      el: document.getElementById('log-output'),
-      log(level, msg) {
-        if (!this.el) return;
-        const time = new Date().toLocaleTimeString();
-        const line = document.createElement('div');
-        line.className = 'log-line';
-        line.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${level}">${level}</span>: ${msg}`;
-        this.el.appendChild(line);
-        this.el.scrollTop = this.el.scrollHeight;
-      },
-      info(m) { this.log('INFO', m); },
-      warn(m) { this.log('WARN', m); },
-      error(m) { this.log('ERROR', m); },
-      success(m) { this.log('SUCCESS', m); },
-      clear() { this.el.innerHTML = ''; }
-    };
-
-    const router = {
-      navigate(viewId) {
-        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-        document.getElementById(`view-${viewId}`).classList.add('active');
-
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`[onclick="router.navigate('${viewId}')"]`).classList.add('active');
-      }
-    };
-
-    // ==========================================
-    // 3. CHAT ENGINE (УПОРЯДОЧИВАНИЕ)
-    // ==========================================
-
-    class ChatEngine {
-      constructor() {
-        this.messages = [];
-        this.processedIds = new Set();
-        this.container = document.getElementById('chat-messages');
-      }
-
-      /**
-       * Прием и обработка входящего сообщения
-       * @param {Object} msg - объект сообщения {id, fromId, fromName, text, timestamp}
-       */
-      incomingMessage(msg) {
-        if (this.processedIds.has(msg.id)) {
-          logger.log('DEBUG', `Deduplicator: Ignored duplicate message ID ${msg.id}`);
-          return;
-        }
-        this.processedIds.add(msg.id);
-
-        // Добавляем и Сортируем по timestamp (rxTime - время, когда пакет был создан/получен нодой)
-        this.messages.push(msg);
-        this.messages.sort((a, b) => a.timestamp - b.timestamp);
-
-        this.render();
-      }
-
-      render() {
-        this.container.innerHTML = '';
-
-        if (this.messages.length === 0) {
-          this.container.innerHTML = '<div style="text-align: center; color: var(--text-muted); margin-top: 20px;">Ожидание сообщений...</div>';
-          return;
-        }
-
-        this.messages.forEach(msg => {
-          const isMe = msg.fromId === meshtasticClient.myNodeId;
-          const el = document.createElement('div');
-          el.className = `msg ${isMe ? 'out' : 'in'}`;
-
-          const timeStr = new Date(msg.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-          el.innerHTML = `
-        <div class="msg-meta">
-            <span>${isMe ? 'Вы' : (msg.fromName || `Node ${msg.fromId}`)}</span>
-        </div>
-        <div>${msg.text}</div>
-        <div class="msg-time">${timeStr}</div>
-      `;
-
-          this.container.appendChild(el);
-        });
-
-        this.container.scrollTop = this.container.scrollHeight;
-      }
-
-      // Отправка сообщения
-      send() {
-        const input = document.getElementById('msg-input');
-        const text = input.value.trim();
-        if (!text) return;
-
-        if (!meshtasticClient.isConnected) {
-          logger.warn('Не подключено к ноде.');
-          return;
-        }
-
-        meshtasticClient.sendText(text)
-          .then(() => {
-            // Оптимистичное добавление в чат (так как мы отправили)
-            this.incomingMessage({
-              id: Math.floor(Math.random() * 999999),
-              fromId: meshtasticClient.myNodeId,
-              fromName: document.getElementById('my-node-name').textContent,
-              text: text,
-              timestamp: Date.now() / 1000 // Используем текущее время для исходящего
-            });
-            input.value = '';
-          })
-          .catch(e => logger.error('Ошибка отправки: ' + e.message));
-      }
-    }
-
-    const chatEngine = new ChatEngine();
-
-
-    // ==========================================
-    // 4. MESHTASTIC CLIENT (ОСНОВНОЙ КЛИЕНТ)
-    // ==========================================
-
-    class MeshtasticClient {
-      constructor() {
-        this.mode = 'none';
-        this.isConnected = false;
-        this.protobufRoot = null;
-        this.Types = {};
-        this.myNodeId = 0;
-        this.nodeDb = new Map(); // Хранение узлов (NodeID -> {longName, ...})
-
-        this.ble = { device: null, toRadio: null, fromRadio: null };
-        this.serial = { port: null, reader: null };
-        this.http = { baseUrl: '', pollInterval: null };
-      }
-
-      // Инициализация Protobuf
-      async initProtobuf() {
-        if (this.protobufRoot) return;
-        logger.info("Загрузка определений Protobuf...");
-        this.protobufRoot = protobuf.Root.fromJSON(MESHTASTIC_PROTO_JSON);
-        this.Types.FromRadio = this.protobufRoot.lookupType("meshtastic.FromRadio");
-        this.Types.ToRadio = this.protobufRoot.lookupType("meshtastic.ToRadio");
-        logger.success("Protobuf готов.");
-      }
-
-      setMode(mode) {
-        this.disconnect();
-        document.querySelectorAll('[id^="conn-form-"]').forEach(el => el.style.display = 'none');
-        const form = document.getElementById(`conn-form-${mode}`);
-        if (form) form.style.display = 'block';
-        this.mode = mode;
-      }
-
-      updateStatus(connected, text = 'Подключено') {
-        this.isConnected = connected;
-        const badge = document.getElementById('global-status');
-        const txt = document.getElementById('status-text');
-        const input = document.getElementById('msg-input');
-        const btn = document.getElementById('btn-send');
-
-        if (connected) {
-          badge.className = 'status-badge connected';
-          txt.textContent = text;
-          input.disabled = false;
-          btn.disabled = false;
-        } else {
-          badge.className = 'status-badge';
-          txt.textContent = 'Отключено';
-          input.disabled = true;
-          btn.disabled = true;
-          this.myNodeId = 0;
-          document.getElementById('my-node-id').textContent = 'N/A';
-          document.getElementById('my-node-name').textContent = 'N/A';
-        }
-      }
-
-      disconnect() {
-        if (this.mode === 'ble' && this.ble.device) {
-          this.ble.device.gatt.disconnect();
-        } else if (this.mode === 'serial' && this.serial.reader) {
-          // Нельзя прервать, пока порт открыт, только остановить чтение
-          this.serial.reader.cancel();
-          this.serial.reader = null;
-        } else if (this.mode === 'http' && this.http.pollInterval) {
-          clearInterval(this.http.pollInterval);
-          this.http.pollInterval = null;
-        }
-        this.updateStatus(false);
-        logger.info(`Отключено. Режим: ${this.mode}`);
-      }
-
-      // ====================
-      // 4.1. BLE LOGIC
-      // ====================
-      async connectBLE() {
-        await this.initProtobuf();
-        if (!navigator.bluetooth) return logger.error('Web Bluetooth не поддерживается.');
-
-        try {
-          this.ble.device = await navigator.bluetooth.requestDevice({
-            filters: [{ services: [UUIDS.SERVICE] }]
-          });
-
-          this.ble.device.addEventListener('gattserverdisconnected', () => this.updateStatus(false, 'BLE Disconnected'));
-
-          const server = await this.ble.device.gatt.connect();
-          const service = await server.getPrimaryService(UUIDS.SERVICE);
-
-          this.ble.fromRadio = await service.getCharacteristic(UUIDS.FROMRADIO);
-          await this.ble.fromRadio.startNotifications();
-          this.ble.fromRadio.addEventListener('characteristicvaluechanged', (e) => this.handleData(e.target.value));
-
-          this.ble.toRadio = await service.getCharacteristic(UUIDS.TORADIO);
-
-          this.updateStatus(true, 'Bluetooth');
-          logger.success('BLE подключено.');
-
-        } catch (e) {
-          logger.error('Ошибка BLE: ' + e.message);
-          this.updateStatus(false);
-        }
-      }
-
-      // ====================
-      // 4.2. SERIAL LOGIC
-      // ====================
-      async connectSerial() {
-        await this.initProtobuf();
-        if (!navigator.serial) return logger.error('Web Serial не поддерживается.');
-
-        try {
-          this.serial.port = await navigator.serial.requestPort();
-          await this.serial.port.open({ baudRate: 115200 });
-
-          this.serial.reader = this.serial.port.readable.getReader();
-          this.updateStatus(true, 'Serial/USB');
-          logger.success('USB-порт подключен. Ожидание данных...');
-
-          this.readSerialLoop();
-        } catch (e) {
-          logger.error('Ошибка Serial: ' + e.message);
-          this.updateStatus(false);
-        }
-      }
-
-      // Это базовая заглушка, в реальности нужен Meshtastic-specific Frame Reader
-      async readSerialLoop() {
-        // Это упрощенная логика: в реальности пакеты Meshtastic имеют 2-байтовый заголовок длины.
-        // Здесь просто читаем буфер.
-        const decoder = new TextDecoder();
-        let buffer = new Uint8Array(0);
-
-        while (this.serial.port && this.serial.port.readable) {
-          try {
-            const { value, done } = await this.serial.reader.read();
-            if (done) break;
-
-            // В WebSerial данные приходят в виде байтов.
-            // Для Protobuf-пакетов их нужно декодировать.
-            // Здесь мы имитируем получение одного пакета.
-            this.handleData(value);
-
-          } catch (error) {
-            logger.error('Serial read error: ' + error.message);
-            break;
-          }
-        }
-        this.updateStatus(false);
-      }
-
-      // ====================
-      // 4.3. HTTP LOGIC
-      // ====================
-      async connectHTTP() {
-        await this.initProtobuf();
-        const ip = document.getElementById('http-ip').value.trim().replace(/\/$/, '');
-        this.http.baseUrl = ip;
-
-        try {
-          // 1. Проверяем связь и получаем NodeInfo
-          const response = await fetch(`${ip}/static/api/v1/info`);
-          if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-          const info = await response.json();
-
-          this.myNodeId = info.myNodeNum;
-          document.getElementById('my-node-id').textContent = info.myNodeNum.toString(16);
-          document.getElementById('my-node-name').textContent = info.myNodeName;
-
-          this.updateStatus(true, 'HTTP/Wi-Fi');
-          logger.success(`Подключено к ${ip}. Нода: ${info.myNodeName}`);
-
-          // 2. Начинаем "стриминг" (имитация long polling)
-          this.startHttpPolling();
-
-        } catch (e) {
-          logger.error('Ошибка HTTP: ' + e.message);
-          this.updateStatus(false);
-        }
-      }
-
-      // Имитация получения пакетов через REST API
-      startHttpPolling() {
-        // HTTP API не предоставляет прямой stream, кроме WebSockets.
-        // Для "одного файла" используем опрос (polling)
-        this.http.pollInterval = setInterval(async () => {
-          try {
-            // Запрашиваем "последние" пакеты. В реальном API Meshtastic это
-            // не стандартизировано, но мы имитируем
-            const response = await fetch(`${this.http.baseUrl}/static/api/v1/packets`);
-            if (!response.ok) return logger.warn('HTTP poll failed');
-            const packets = await response.json();
-
-            // Для простоты, имитируем один пакет FromRadio
-            if (packets && packets.length > 0) {
-              // Здесь нужно получить raw bytes, но HTTP API возвращает JSON, 
-              // так что имитируем декодирование для совместимости
-              const latestPacket = packets[0];
-              if (latestPacket.data) {
-                // В реальном API Protobuf приходят в Base64.
-                // Мы не можем здесь просто взять Base64, поэтому
-                // для HTTP-режима делаем только отправку, а прием
-                // обрабатываем в ChatEngine для исходящих.
-              }
-            }
-
-          } catch (e) {
-            logger.error('HTTP Polling Error: ' + e.message);
-          }
-        }, 5000); // Опрашиваем каждые 5 секунд
-      }
-
-      // ====================
-      // 4.4. DATA FLOW
-      // ====================
-
-      /**
-       * Унифицированный обработчик входящих байтов (из BLE или Serial)
-       * @param {DataView} value - байты пакета
-       */
-      handleData(value) {
-        const buffer = new Uint8Array(value.buffer || value);
-
-        try {
-          const fromRadio = this.Types.FromRadio.decode(buffer);
-
-          // 1. Моя информация
-          if (fromRadio.myInfo) {
-            this.myNodeId = fromRadio.myInfo.myNodeNum;
-            document.getElementById('my-node-id').textContent = this.myNodeId.toString(16);
-            logger.success(`Мой NodeID: ${this.myNodeId.toString(16)}`);
-          }
-
-          // 2. Информация об узле
-          if (fromRadio.nodeInfo) {
-            const num = fromRadio.nodeInfo.num;
-            const name = fromRadio.nodeInfo.user?.longName || `Node ${num.toString(16)}`;
-            this.nodeDb.set(num, { longName: name, lastSeen: Date.now() });
-            this.renderNodes();
-            logger.info(`Узел найден: ${name}`);
-          }
-
-          // 3. Пакет данных (Чат/сообщение)
-          if (fromRadio.packet) {
-            this.processMeshPacket(fromRadio.packet);
-          }
-
-        } catch (e) {
-          logger.warn("Не удалось декодировать пакет FromRadio: " + e.message);
-        }
-      }
-
-      processMeshPacket(packet) {
-        if (!packet.decoded) return;
-
-        // Порт 1 = TEXT_MESSAGE_APP
-        if (packet.decoded.portnum === 1) {
-          const bytes = packet.decoded.payload;
-          const text = new TextDecoder("utf-8").decode(bytes);
-
-          const senderInfo = this.nodeDb.get(packet.from);
-          const senderName = senderInfo ? senderInfo.longName : `Node ${packet.from.toString(16)}`;
-
-          chatEngine.incomingMessage({
-            id: packet.id,
-            fromId: packet.from,
-            fromName: senderName,
-            text: text,
-            timestamp: packet.rxTime || Math.floor(Date.now() / 1000) // Используем rxTime для сортировки
-          });
-          logger.log('DEBUG', `Text Message: "${text}" from ${senderName}`);
-        }
-      }
-
-      /**
-       * Отправка текстового сообщения (общая функция)
-       * @param {string} text 
-       */
-      async sendText(text) {
-        const payloadBytes = new TextEncoder().encode(text);
-        const packetId = Math.floor(Math.random() * 0xFFFFFFFF);
-
-        const packetStruct = {
-          to: 0xFFFFFFFF, // Broadcast
-          decoded: {
-            portnum: 1, // TEXT_MESSAGE_APP
-            payload: payloadBytes
-          },
-          id: packetId
-        };
-
-        const toRadioStruct = { packet: packetStruct };
-        const err = this.Types.ToRadio.verify(toRadioStruct);
-        if (err) throw new Error("Protobuf verification failed: " + err);
-
-        const buffer = this.Types.ToRadio.encode(toRadioStruct).finish();
-
-        if (this.mode === 'ble' && this.ble.toRadio) {
-          await this.ble.toRadio.writeValue(buffer);
-          logger.info('✓ BLE message sent.');
-        } else if (this.mode === 'serial' && this.serial.port) {
-          const writer = this.serial.port.writable.getWriter();
-          await writer.write(buffer);
-          writer.releaseLock();
-          logger.info('✓ Serial message sent.');
-        } else if (this.mode === 'http' && this.http.baseUrl) {
-          // HTTP API часто ожидает Base64, а не Protobuf байты напрямую
-          const base64Packet = btoa(String.fromCharCode(...buffer));
-          await fetch(`${this.http.baseUrl}/static/api/v1/toRadio`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ payload: base64Packet })
-          });
-          logger.info('✓ HTTP message sent.');
-        } else {
-          throw new Error("Нет активного подключения для отправки.");
-        }
-      }
-
-      renderNodes() {
-        const container = document.getElementById('node-list-container');
-        container.innerHTML = '';
-
-        if (this.nodeDb.size === 0) {
-          container.innerHTML = '<p style="color: var(--text-muted);">Пока не получено информации об узлах.</p>';
-          return;
-        }
-
-        this.nodeDb.forEach((node, id) => {
-          const el = document.createElement('div');
-          el.style.cssText = 'background: #2a3850; padding: 10px; border-radius: 6px;';
-          el.innerHTML = `
-          <strong style="color: var(--accent);">${node.longName}</strong><br>
-          <small style="color: var(--text-muted);">ID: ${id.toString(16)}</small><br>
-          <small style="color: var(--text-muted);">Last Seen: ${new Date(node.lastSeen).toLocaleTimeString()}</small>
-        `;
-          container.appendChild(el);
-        });
-      }
-    }
-
-    const meshtasticClient = new MeshtasticClient();
-
-    // ==========================================
-    // 5. ЗАПУСК
-    // ==========================================
-
-    window.onload = () => {
-      // Инициализация при загрузке
-      meshtasticClient.initProtobuf();
-    };
-  </script>
+  <div class="modal" id="confirmModal">
+    <div class="modal-content">
+      <h2 class="modal-title" id="modalTitle">Confirm Action</h2>
+      <p id="modalMessage">Are you sure?</p>
+      <div class="modal-buttons">
+        <button class="secondary" id="modalCancelBtn">Cancel</button>
+        <button id="modalConfirmBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
 </body>
 
 </html>
